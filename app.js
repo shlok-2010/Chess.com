@@ -32,6 +32,9 @@ io.on("connection", function(uniquesocket){
     } else {
         uniquesocket.emit("spectatorRole");
     } 
+    
+    // Send the current game board state to the connecting socket
+    uniquesocket.emit("boardState", chess.fen());
     uniquesocket.on("disconnect", function(){
         if(uniquesocket.id === players.white){
             delete players.white;
@@ -57,9 +60,64 @@ io.on("connection", function(uniquesocket){
             console.log(err);
             uniquesocket.emit("invalidMove", move);
         }
-    })
+    });
+
+    uniquesocket.on("resign", () => {
+        if (uniquesocket.id === players.white) {
+            io.emit("resigned", { resigner: 'w' });
+            chess.reset();
+            io.emit("boardState", chess.fen());
+        } else if (uniquesocket.id === players.black) {
+            io.emit("resigned", { resigner: 'b' });
+            chess.reset();
+            io.emit("boardState", chess.fen());
+        }
+    });
+
+    uniquesocket.on("offerDraw", () => {
+        let receiverId = null;
+        if (uniquesocket.id === players.white) {
+            receiverId = players.black;
+        } else if (uniquesocket.id === players.black) {
+            receiverId = players.white;
+        }
+        if (receiverId) {
+            io.to(receiverId).emit("drawOffered");
+        }
+    });
+
+    uniquesocket.on("drawResponse", (data) => {
+        if (data.accepted) {
+            io.emit("drawDeclared", { reason: 'agreement' });
+            chess.reset();
+            io.emit("boardState", chess.fen());
+        } else {
+            let offererId = null;
+            if (uniquesocket.id === players.white) {
+                offererId = players.black;
+            } else if (uniquesocket.id === players.black) {
+                offererId = players.white;
+            }
+            if (offererId) {
+                io.to(offererId).emit("drawDeclined");
+            }
+        }
+    });
 });
 
-server.listen(3000, function(){
+server.listen(3000, "0.0.0.0", function(){
+    const os = require("os");
+    const nets = os.networkInterfaces();
+    let lanIP = "localhost";
+    for (const name of Object.keys(nets)) {
+        for (const net of nets[name]) {
+            if (net.family === "IPv4" && !net.internal) {
+                lanIP = net.address;
+            }
+        }
+    }
     console.log("Server is running on port 3000");
+    console.log(`\n🌐 LAN Multiplayer Ready!`);
+    console.log(`   Your PC:      http://localhost:3000`);
+    console.log(`   Other player:  http://${lanIP}:3000\n`);
 });
