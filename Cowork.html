@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CrowdSolve - Product Requirements Document</title>
+
+<style>
+    body{
+        font-family: Arial, sans-serif;
+        line-height:1.7;
+        max-width:1200px;
+        margin:auto;
+        padding:40px;
+        color:#333;
+    }
+
+    h1,h2,h3{
+        color:#0f172a;
+    }
+
+    h1{
+        text-align:center;
+        border-bottom:3px solid #2563eb;
+        padding-bottom:10px;
+    }
+
+    section{
+        margin-bottom:40px;
+    }
+
+    table{
+        width:100%;
+        border-collapse:collapse;
+        margin-top:15px;
+    }
+
+    table,th,td{
+        border:1px solid #ddd;
+    }
+
+    th,td{
+        padding:12px;
+        text-align:left;
+    }
+
+    th{
+        background:#f3f4f6;
+    }
+
+    .feature{
+        background:#f8fafc;
+        padding:15px;
+        margin:10px 0;
+        border-left:5px solid #2563eb;
+    }
+
+    code{
+        background:#f3f4f6;
+        padding:2px 6px;
+        border-radius:4px;
+    }
+</style>
+
+</head>
+<body>
+
+<h1>CrowdSolve</h1>
+<p align="center">
+AI-Powered Community Issue Reporting & Resolution Platform
+</p>
+
+<section>
+<h2>1. Executive Summary</h2>
+
+<p>
+CrowdSolve is a community-driven web platform that enables citizens to report local issues such as potholes, broken streetlights, water leakage, garbage accumulation, public safety concerns, and infrastructure problems.
+</p>
+
+<p>
+The platform leverages Google's Gemini AI to automatically categorize issues, detect duplicates, assign priority levels, and summarize complaints. Local communities can support issues through voting and comments, helping authorities identify and resolve the most impactful problems.
+</p>
+
+<p>
+The goal is to create a transparent, collaborative, and intelligent civic engagement platform.
+</p>
+</section>
+
+<section>
+<h2>2. Problem Statement</h2>
+
+<ul>
+<li>Citizens struggle to report civic issues efficiently.</li>
+<li>Duplicate complaints create noise.</li>
+<li>Authorities lack prioritization mechanisms.</li>
+<li>Citizens cannot easily track issue progress.</li>
+<li>Many issues remain unresolved due to lack of visibility.</li>
+</ul>
+
+</section>
+
+<section>
+<h2>3. Proposed Solution</h2>
+
+<p>
+CrowdSolve provides a centralized platform where users can:
+</p>
+
+<ul>
+<li>Report issues with images and location.</li>
+<li>View issues on an interactive map.</li>
+<li>Vote on issues requiring attention.</li>
+<li>Receive real-time updates.</li>
+<li>Track issue resolution progress.</li>
+<li>Use AI to streamline issue management.</li>
+</ul>
+
+</section>
+
+<section>
+<h2>4. Objectives</h2>
+
+<ul>
+<li>Increase citizen participation.</li>
+<li>Improve transparency.</li>
+<li>Reduce duplicate complaints.</li>
+<li>Enable faster issue prioritization.</li>
+<li>Create data-driven civic management.</li>
+</ul>
+
+</section>
+
+<section>
+<h2>5. Target Users</h2>
+
+<table>
+<tr>
+<th>User Type</th>
+<th>Description</th>
+</tr>
+
+<tr>
+<td>Citizens</td>
+<td>Report and track local issues</td>
+</tr>
+
+<tr>
+<td>Community Members</td>
+<td>Vote and comment on issues</td>
+</tr>
+
+<tr>
+<td>Authorities</td>
+<td>Manage and resolve issues</td>
+</tr>
+
+<tr>
+<td>Administrators</td>
+<td>Moderate platform activities</td>
+</tr>
+
+</table>
+</section>
+
+<section>
+<h2>6. Core Features</h2>
+
+<div class="feature">
+<h3>6.1 User Authentication</h3>
+<ul>
+<li>Register/Login</li>
+<li>JWT Authentication</li>
+<li>User Profiles</li>
+</ul>
+</div>
+
+<div class="feature">
+<h3>6.2 Issue Reporting</h3>
+<ul>
+<li>Title</li>
+<li>Description</li>
+<li>Image Upload</li>
+<li>Location Selection</li>
+<li>Category Selection</li>
+</ul>
+</div>
+
+<div class="feature">
+<h3>6.3 AI-Powered Analysis</h3>
+<ul>
+<li>Issue Categorization</li>
+<li>Priority Detection</li>
+<li>Duplicate Detection</li>
+<li>Issue Summarization</li>
+<li>Sentiment Analysis</li>
+</ul>
+</div>
+
+<div class="feature">
+<h3>6.4 Interactive Map</h3>
+<ul>
+<li>Leaflet Maps</li>
+<li>OpenStreetMap Tiles</li>
+<li>Issue Markers</li>
+<li>Filter by Category</li>
+</ul>
+</div>
+
+<div class="feature">
+<h3>6.5 Community Engagement</h3>
+<ul>
+<li>Upvote Issues</li>
+<li>Comment System</li>
+<li>Share Reports</li>
+</ul>
+</div>
+
+<div class="feature">
+<h3>6.6 Issue Tracking</h3>
+<ul>
+<li>Reported</li>
+<li>Under Review</li>
+<li>In Progress</li>
+<li>Resolved</li>
+</ul>
+</div>
+
+<div class="feature">
+<h3>6.7 Notifications</h3>
+<ul>
+<li>Status Updates</li>
+<li>Comments</li>
+<li>Votes</li>
+</ul>
+</div>
+
+</section>
+
+<section>
+<h2>7. AI Capabilities (Gemini API)</h2>
+
+<table>
+<tr>
+<th>Capability</th>
+<th>Purpose</th>
+</tr>
+
+<tr>
+<td>Category Detection</td>
+<td>Roads, Water, Electricity, Waste, Safety</td>
+</tr>
+
+<tr>
+<td>Priority Classification</td>
+<td>Low, Medium, High, Critical</td>
+</tr>
+
+<tr>
+<td>Duplicate Detection</td>
+<td>Identify repeated complaints</td>
+</tr>
+
+<tr>
+<td>Issue Summary</td>
+<td>Generate concise descriptions</td>
+</tr>
+
+<tr>
+<td>Sentiment Analysis</td>
+<td>Understand public concern levels</td>
+</tr>
+
+</table>
+</section>
+
+<section>
+<h2>8. User Workflow</h2>
+
+<ol>
+<li>User registers and logs in.</li>
+<li>User reports an issue.</li>
+<li>Image and location are uploaded.</li>
+<li>Gemini analyzes the complaint.</li>
+<li>Issue appears on map.</li>
+<li>Community votes and comments.</li>
+<li>Authorities update status.</li>
+<li>User receives notifications.</li>
+<li>Issue gets resolved.</li>
+</ol>
+
+</section>
+
+<section>
+<h2>9. Admin Dashboard</h2>
+
+<ul>
+<li>Total Issues</li>
+<li>Resolved Issues</li>
+<li>Pending Issues</li>
+<li>Priority Heatmaps</li>
+<li>User Management</li>
+<li>Issue Moderation</li>
+<li>Analytics Dashboard</li>
+</ul>
+
+</section>
+
+<section>
+<h2>10. Technology Stack</h2>
+
+<table>
+<tr>
+<th>Layer</th>
+<th>Technology</th>
+</tr>
+
+<tr>
+<td>Frontend</td>
+<td>React.js, Vite, Tailwind CSS</td>
+</tr>
+
+<tr>
+<td>Backend</td>
+<td>Node.js, Express.js</td>
+</tr>
+
+<tr>
+<td>Database</td>
+<td>MongoDB Atlas</td>
+</tr>
+
+<tr>
+<td>AI</td>
+<td>Google Gemini API</td>
+</tr>
+
+<tr>
+<td>Maps</td>
+<td>Leaflet + OpenStreetMap</td>
+</tr>
+
+<tr>
+<td>Realtime</td>
+<td>Socket.IO</td>
+</tr>
+
+<tr>
+<td>Storage</td>
+<td>Cloudinary</td>
+</tr>
+
+<tr>
+<td>Deployment</td>
+<td>Vercel + Render</td>
+</tr>
+
+</table>
+
+</section>
+
+<section>
+<h2>11. Non-Functional Requirements</h2>
+
+<ul>
+<li>Responsive UI</li>
+<li>Secure Authentication</li>
+<li>Fast API Response</li>
+<li>Scalable Architecture</li>
+<li>99% Uptime Target</li>
+<li>Mobile Friendly Design</li>
+</ul>
+
+</section>
+
+<section>
+<h2>12. Future Scope</h2>
+
+<ul>
+<li>Mobile Application</li>
+<li>Government Integration APIs</li>
+<li>Predictive Issue Hotspots</li>
+<li>Multilingual Support</li>
+<li>AI Resolution Suggestions</li>
+<li>Smart City Integration</li>
+</ul>
+
+</section>
+
+<section>
+<h2>13. Success Metrics</h2>
+
+<ul>
+<li>Issues Reported</li>
+<li>Issues Resolved</li>
+<li>Average Resolution Time</li>
+<li>User Engagement Rate</li>
+<li>Duplicate Reduction Percentage</li>
+<li>Community Participation Rate</li>
+</ul>
+
+</section>
+
+<section>
+<h2>14. Project USP</h2>
+
+<p>
+CrowdSolve combines AI-powered issue management, real-time community collaboration, and location-based reporting into a single platform. Unlike traditional complaint systems, it intelligently prioritizes issues, reduces duplicate reports, and creates a transparent environment for citizens and authorities.
+</p>
+
+</section>
+
+</body>
+</html>

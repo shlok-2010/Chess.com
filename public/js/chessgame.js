@@ -7,6 +7,78 @@ let sourceSquare = null;
 let playerRole = null;
 let selectedSquare = null; // For click-to-move
 
+// Timer variables
+let whiteTime = 30;
+let blackTime = 30;
+
+// Move history
+let moveHistory = [];
+
+// Timer display update
+const updateTimerDisplay = () => {
+    const whiteTimerEl = document.getElementById("whiteTimer");
+    const blackTimerEl = document.getElementById("blackTimer");
+    const currentTurn = chess.turn(); // 'w' or 'b'
+    
+    if (whiteTimerEl) {
+        whiteTimerEl.innerText = formatTime(whiteTime);
+        if (currentTurn === 'w') {
+            whiteTimerEl.className = whiteTime <= 10 ? "timer-danger" : "timer-normal";
+            whiteTimerEl.style.opacity = "1";
+        } else {
+            whiteTimerEl.className = "timer-inactive";
+            whiteTimerEl.style.opacity = "0.4";
+        }
+    }
+    
+    if (blackTimerEl) {
+        blackTimerEl.innerText = formatTime(blackTime);
+        if (currentTurn === 'b') {
+            blackTimerEl.className = blackTime <= 10 ? "timer-danger" : "timer-normal";
+            blackTimerEl.style.opacity = "1";
+        } else {
+            blackTimerEl.className = "timer-inactive";
+            blackTimerEl.style.opacity = "0.4";
+        }
+    }
+};
+
+const formatTime = (seconds) => {
+    return seconds.toString();
+};
+
+// Move history display update
+const updateMoveHistoryDisplay = () => {
+    const moveHistoryEl = document.getElementById("moveHistory");
+    if (!moveHistoryEl) return;
+    
+    moveHistoryEl.innerHTML = "";
+    
+    if (moveHistory.length === 0) {
+        moveHistoryEl.innerHTML = `<span class="text-xs text-zinc-500 italic">No moves yet</span>`;
+        return;
+    }
+    
+    // Group moves in pairs (white and black)
+    for (let i = 0; i < moveHistory.length; i += 2) {
+        const moveNumber = Math.floor(i / 2) + 1;
+        const whiteMove = moveHistory[i];
+        const blackMove = moveHistory[i + 1] || "";
+        
+        const moveRow = document.createElement("div");
+        moveRow.className = "flex gap-2 text-sm py-1 border-b border-zinc-800/50";
+        moveRow.innerHTML = `
+            <span class="w-8 text-zinc-500">${moveNumber}.</span>
+            <span class="flex-1 text-zinc-200">${whiteMove}</span>
+            <span class="flex-1 text-zinc-200">${blackMove}</span>
+        `;
+        moveHistoryEl.appendChild(moveRow);
+    }
+    
+    // Scroll to bottom
+    moveHistoryEl.scrollTop = moveHistoryEl.scrollHeight;
+};
+
 const updateCapturedPieces = () => {
     // Initial starting counts (excluding Kings)
     const initialCounts = {
@@ -566,6 +638,7 @@ socket.on("boardState", function (fen) {
     selectedSquare = null;
     clearLegalMoves();
     renderBoard();
+    updateMoveHistoryDisplay();
 });
 
 socket.on("move", function (move) {
@@ -573,6 +646,7 @@ socket.on("move", function (move) {
     selectedSquare = null;
     clearLegalMoves();
     renderBoard();
+    updateMoveHistoryDisplay();
 });
 
 // Action Buttons click handlers
@@ -623,6 +697,27 @@ socket.on("drawDeclined", function () {
 
 socket.on("drawDeclared", function (data) {
     showGamePopup("DRAW AGREED", "Game ended in a draw by mutual agreement.");
+});
+
+// Timer update listener
+socket.on("timerUpdate", function (data) {
+    whiteTime = data.whiteTime;
+    blackTime = data.blackTime;
+    updateTimerDisplay();
+});
+
+// Move history listener
+socket.on("moveHistory", function (history) {
+    moveHistory = history;
+    updateMoveHistoryDisplay();
+});
+
+// Game over listener (timeout)
+socket.on("gameOver", function (data) {
+    if (data.reason === 'timeout') {
+        const winnerText = data.winner === 'w' ? 'White' : 'Black';
+        showGamePopup("TIME'S UP!", `${winnerText} wins on time!`);
+    }
 });
 
 renderBoard();

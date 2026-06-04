@@ -106,10 +106,13 @@
         color: white;
         border-radius: 8px;
         cursor: pointer;
+        transition: all 0.3s ease;
       }
 
       .popup-box button:hover {
         background: #333;
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
       }
 
       /* Promotion dialog piece buttons */
@@ -125,13 +128,14 @@
         color: #fff;
         cursor: pointer;
         font-size: 2rem;
-        transition: background 0.15s, transform 0.1s;
+        transition: all 0.3s ease;
       }
 
       .promo-btn:hover {
         background: #2d2d2d;
         transform: scale(1.08);
         border-color: #888;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
       }
 
       .promo-btn span.label {
@@ -251,81 +255,147 @@
         color: #121214;
         filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.8));
       }
+
+      /* Timer styles */
+      .timer-normal {
+        color: #22c55e;
+        font-weight: 600;
+      }
+
+      .timer-danger {
+        color: #ef4444;
+        font-weight: 700;
+        animation: timerPulse 1s ease-in-out infinite;
+      }
+
+      .timer-inactive {
+        color: #6b7280;
+        font-weight: 500;
+      }
+
+      @keyframes timerPulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+      }
+
+      /* Move history sidebar */
+      .move-history-container {
+        width: 200px;
+        max-height: 400px;
+        overflow-y: auto;
+        background: rgba(24, 24, 27, 0.6);
+        border: 1px solid rgba(63, 63, 70, 0.4);
+        border-radius: 12px;
+        padding: 12px;
+      }
+
+      .move-history-container::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .move-history-container::-webkit-scrollbar-track {
+        background: rgba(39, 39, 42, 0.3);
+        border-radius: 3px;
+      }
+
+      .move-history-container::-webkit-scrollbar-thumb {
+        background: rgba(113, 113, 122, 0.5);
+        border-radius: 3px;
+      }
+
+      .move-history-container::-webkit-scrollbar-thumb:hover {
+        background: rgba(113, 113, 122, 0.7);
+      }
     </style>
   </head>
-  <body class="bg-zinc-950 font-sans text-zinc-100 overflow-x-hidden">
+  <body class="bg-zinc-950 font-sans text-zinc-100 overflow-x-hidden" style="background-image: url('https://images.unsplash.com/photo-1529699211952-734e80c4d42b?w=1920&q=80'); background-size: cover; background-position: center; background-attachment: fixed;">
     <div
       class="min-h-screen w-full flex items-center justify-center p-4 select-none"
     >
       <!-- Chessboard and Inline Panels Container -->
       <div
-        class="flex flex-col items-center gap-3 bg-zinc-900/40 p-6 rounded-2xl shadow-2xl border border-zinc-800/80 backdrop-blur-md"
+        class="flex gap-4 bg-zinc-900/40 p-6 rounded-2xl shadow-2xl border border-zinc-800/80 backdrop-blur-md"
       >
-        <!-- Top Opponent Panel -->
-        <div
-          id="topPlayerPanel"
-          class="w-[400px] flex items-center justify-between px-3 py-2 bg-zinc-950/60 rounded-xl border border-zinc-800/40 transition-all duration-300"
-        >
-          <div class="flex items-center gap-2">
-            <span
-              id="topPlayerIndicator"
-              class="w-2.5 h-2.5 rounded-full bg-zinc-400"
-            ></span>
-            <span class="font-medium text-zinc-300 text-sm" id="topPlayerName"
-              >Black</span
-            >
-          </div>
-          <!-- Captured pieces shown inline here -->
+        <!-- Left Side: Chessboard -->
+        <div class="flex flex-col items-center gap-3">
+          <!-- Top Opponent Panel -->
           <div
-            id="topCaptured"
-            class="flex items-center gap-0.5 text-xl tracking-tighter"
-          ></div>
-        </div>
-
-        <!-- The Board -->
-        <div
-          class="chessboard-wrapper overflow-hidden rounded-xl border border-zinc-800/80 shadow-2xl bg-zinc-900"
-        >
-          <div class="chessboard"></div>
-        </div>
-
-        <!-- Bottom Self Panel -->
-        <div
-          id="bottomPlayerPanel"
-          class="w-[400px] flex items-center justify-between px-3 py-2 bg-zinc-950/60 rounded-xl border border-zinc-800/40 transition-all duration-300"
-        >
-          <div class="flex items-center gap-2">
-            <span
-              id="bottomPlayerIndicator"
-              class="w-2.5 h-2.5 rounded-full bg-white shadow-sm"
-            ></span>
-            <span
-              class="font-medium text-zinc-100 text-sm"
-              id="bottomPlayerName"
-              >White</span
-            >
+            id="topPlayerPanel"
+            class="w-[400px] flex items-center justify-between px-3 py-2 bg-zinc-950/60 rounded-xl border border-zinc-800/40 transition-all duration-300"
+          >
+            <div class="flex items-center gap-2">
+              <span
+                id="topPlayerIndicator"
+                class="w-2.5 h-2.5 rounded-full bg-zinc-400"
+              ></span>
+              <span class="font-medium text-zinc-300 text-sm" id="topPlayerName"
+                >Black</span
+              >
+            </div>
+            <!-- Timer -->
+            <span id="blackTimer" class="timer-normal text-lg">30</span>
+            <!-- Captured pieces shown inline here -->
+            <div
+              id="topCaptured"
+              class="flex items-center gap-0.5 text-xl tracking-tighter"
+            ></div>
           </div>
-          <!-- Captured pieces shown inline here -->
+
+          <!-- The Board -->
           <div
-            id="bottomCaptured"
-            class="flex items-center gap-0.5 text-xl tracking-tighter"
-          ></div>
+            class="chessboard-wrapper overflow-hidden rounded-xl border border-zinc-800/80 shadow-2xl bg-zinc-900"
+          >
+            <div class="chessboard"></div>
+          </div>
+
+          <!-- Bottom Self Panel -->
+          <div
+            id="bottomPlayerPanel"
+            class="w-[400px] flex items-center justify-between px-3 py-2 bg-zinc-950/60 rounded-xl border border-zinc-800/40 transition-all duration-300"
+          >
+            <div class="flex items-center gap-2">
+              <span
+                id="bottomPlayerIndicator"
+                class="w-2.5 h-2.5 rounded-full bg-white shadow-sm"
+              ></span>
+              <span
+                class="font-medium text-zinc-100 text-sm"
+                id="bottomPlayerName"
+                >White</span
+              >
+            </div>
+            <!-- Timer -->
+            <span id="whiteTimer" class="timer-normal text-lg">30</span>
+            <!-- Captured pieces shown inline here -->
+            <div
+              id="bottomCaptured"
+              class="flex items-center gap-0.5 text-xl tracking-tighter"
+            ></div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="w-[400px] flex gap-3 mt-1.5">
+            <button
+              id="resignBtn"
+              class="flex-1 py-2 px-4 text-black rounded-xl bg-red-950/30 border border-red-900/30 hover:bg-red-900/50 hover:scale-105 active:bg-red-900/60 active:scale-95 text-red-300 hover:text-red-200 text-xs font-bold tracking-wider uppercase transition-all duration-300 shadow-md cursor-pointer"
+            >
+              🏳️ Resign
+            </button>
+            <button
+              id="offerDrawBtn"
+              class="flex-1 py-2 px-4 text-black rounded-xl bg-zinc-950/40 border border-zinc-800/40 hover:bg-zinc-800/60 hover:scale-105 active:bg-zinc-800/70 active:scale-95 text-zinc-300 hover:text-zinc-100 text-xs font-bold tracking-wider uppercase transition-all duration-300 shadow-md cursor-pointer"
+            >
+              🤝 Offer Draw
+            </button>
+          </div>
         </div>
 
-        <!-- Action Buttons -->
-        <div class="w-[400px] flex gap-3 mt-1.5">
-          <button
-            id="resignBtn"
-            class="flex-1 py-2 px-4 text-black rounded-xl bg-red-950/30 border border-red-900/30 hover:bg-red-900/40 active:bg-red-900/60 text-red-300 hover:text-red-200 text-xs font-bold tracking-wider uppercase transition-all duration-200 shadow-md cursor-pointer"
-          >
-            🏳️ Resign
-          </button>
-          <button
-            id="offerDrawBtn"
-            class="flex-1 py-2 px-4 text-black rounded-xl bg-zinc-950/40 border border-zinc-800/40 hover:bg-zinc-800/50 active:bg-zinc-800/70 text-zinc-300 hover:text-zinc-100 text-xs font-bold tracking-wider uppercase transition-all duration-200 shadow-md cursor-pointer"
-          >
-            🤝 Offer Draw
-          </button>
+        <!-- Right Side: Move History Sidebar -->
+        <div class="flex flex-col gap-3">
+          <h3 class="text-sm font-semibold text-zinc-400 uppercase tracking-wider">Move History</h3>
+          <div id="moveHistory" class="move-history-container">
+            <span class="text-xs text-zinc-500 italic">No moves yet</span>
+          </div>
         </div>
       </div>
     </div>

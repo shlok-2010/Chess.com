@@ -13,6 +13,88 @@
  let players = {};
  let currentPlayer = "W";
 
+ // Timer settings
+ const INITIAL_TIME = 30; // 30 seconds per player
+ let whiteTime = INITIAL_TIME;
+ let blackTime = INITIAL_TIME;
+ let timerInterval = null;
+ let gameActive = true;
+
+ // Move history
+ let moveHistory = [];
+
+ // Timer functions
+ function startTimer() {
+     if (timerInterval) clearInterval(timerInterval);
+     timerInterval = setInterval(() => {
+         if (!gameActive) {
+             clearInterval(timerInterval);
+             return;
+         }
+
+         const currentTurn = chess.turn();
+
+         if (currentTurn === 'w') {
+             whiteTime--;
+             if (whiteTime <= 0) {
+                 whiteTime = 0;
+                 gameActive = false;
+                 clearInterval(timerInterval);
+                 io.emit("gameOver", { winner: 'b', reason: 'timeout' });
+                 chess.reset();
+                 resetGame();
+             }
+         } else {
+             blackTime--;
+             if (blackTime <= 0) {
+                 blackTime = 0;
+                 gameActive = false;
+                 clearInterval(timerInterval);
+                 io.emit("gameOver", { winner: 'w', reason: 'timeout' });
+                 chess.reset();
+                 resetGame();
+             }
+         }
+
+         io.emit("timerUpdate", { whiteTime, blackTime });
+     }, 1000);
+ }
+
+ function resetGame() {
+     whiteTime = INITIAL_TIME;
+     blackTime = INITIAL_TIME;
+     moveHistory = [];
+     gameActive = true;
+     if (timerInterval) clearInterval(timerInterval);
+ }
+
+ function formatMove(move, piece) {
+     const pieceSymbols = {
+         'p': '', 'n': 'N', 'b': 'B', 'r': 'R', 'q': 'Q', 'k': 'K'
+     };
+     let notation = '';
+     
+     if (piece && piece.type !== 'p') {
+         notation += pieceSymbols[piece.type];
+     }
+     
+     notation += move.to;
+     
+     if (move.promotion) {
+         notation += '=' + move.promotion.toUpperCase();
+     }
+     
+     if (move.captured) {
+         if (piece && piece.type === 'p') {
+             notation = move.from[0] + 'x' + move.to;
+         } else {
+             notation = notation.replace(move.to, 'x' + move.to);
+         }
+     }
+     
+     return notation;
+ }
+
  app.set("view engine", "ejs");
  app.use(express.static(path.join(__dirname, "public")));
 
@@ -26,15 +108,25 @@ io.on("connection", function(uniquesocket){
     if(!players.white){
         players.white = uniquesocket.id;
         uniquesocket.emit("playerRole", "w");
+        console.log("White player joined:", uniquesocket.id);
     } else if (!players.black)  {
         players.black = uniquesocket.id;
         uniquesocket.emit("playerRole", "b");
+        console.log("Black player joined:", uniquesocket.id);
+        // Start timer when both players have joined
+        if (!timerInterval && gameActive) {
+            console.log("Both players joined, starting timer");
+            startTimer();
+        }
     } else {
         uniquesocket.emit("spectatorRole");
+        console.log("Spectator joined:", uniquesocket.id);
     } 
     
     // Send the current game board state to the connecting socket
     uniquesocket.emit("boardState", chess.fen());
+    uniquesocket.emit("timerUpdate", { whiteTime, blackTime });
+    uniquesocket.emit("moveHistory", moveHistory);
     uniquesocket.on("disconnect", function(){
         if(uniquesocket.id === players.white){
             delete players.white;
@@ -47,11 +139,32 @@ io.on("connection", function(uniquesocket){
             if (chess.turn() === "w" &&  uniquesocket.id !== players.white) return;
             if (chess.turn() === "b" &&  uniquesocket.id !== players.black) return;
 
+            // Get piece before move for notation
+            const piece = chess.get(move.from);
+            
             const result = chess.move(move);
             if(result){
+                // Track move history
+                const moveNotation = formatMove(move, piece);
+                moveHistory.push(moveNotation);
+                
+                // Reset the current player's time to 30 seconds after move
+                if (chess.turn() === 'w') {
+                    blackTime = INITIAL_TIME;
+                } else {
+                    whiteTime = INITIAL_TIME;
+                }
+                
                 currentPlayer = chess.turn();
                 io.emit("move", move);
                 io.emit("boardState", chess.fen());
+                io.emit("moveHistory", moveHistory);
+                io.emit("timerUpdate", { whiteTime, blackTime });
+                
+                // Start timer if not already running
+                if (!timerInterval && gameActive) {
+                    startTimer();
+                }
             } else{
                 console.log("invalid move : ", move);
                 uniquesocket.emit("invalidMove", move);
@@ -66,11 +179,17 @@ io.on("connection", function(uniquesocket){
         if (uniquesocket.id === players.white) {
             io.emit("resigned", { resigner: 'w' });
             chess.reset();
+            resetGame();
             io.emit("boardState", chess.fen());
+            io.emit("timerUpdate", { whiteTime, blackTime });
+            io.emit("moveHistory", moveHistory);
         } else if (uniquesocket.id === players.black) {
             io.emit("resigned", { resigner: 'b' });
             chess.reset();
+            resetGame();
             io.emit("boardState", chess.fen());
+            io.emit("timerUpdate", { whiteTime, blackTime });
+            io.emit("moveHistory", moveHistory);
         }
     });
 
@@ -90,7 +209,10 @@ io.on("connection", function(uniquesocket){
         if (data.accepted) {
             io.emit("drawDeclared", { reason: 'agreement' });
             chess.reset();
+            resetGame();
             io.emit("boardState", chess.fen());
+            io.emit("timerUpdate", { whiteTime, blackTime });
+            io.emit("moveHistory", moveHistory);
         } else {
             let offererId = null;
             if (uniquesocket.id === players.white) {
@@ -105,19 +227,9 @@ io.on("connection", function(uniquesocket){
     });
 });
 
-server.listen(3000, "0.0.0.0", function(){
-    const os = require("os");
-    const nets = os.networkInterfaces();
-    let lanIP = "localhost";
-    for (const name of Object.keys(nets)) {
-        for (const net of nets[name]) {
-            if (net.family === "IPv4" && !net.internal) {
-                lanIP = net.address;
-            }
-        }
-    }
-    console.log("Server is running on port 3000");
-    console.log(`\n🌐 LAN Multiplayer Ready!`);
-    console.log(`   Your PC:      http://localhost:3000`);
-    console.log(`   Other player:  http://${lanIP}:3000\n`);
+const PORT = process.env.PORT || 3001;
+server.listen(PORT, "0.0.0.0", function(){
+    console.log("Server is running on port", PORT);
+    console.log(`\n🌐 Chess Game Ready!`);
+    console.log(`   Access:      http://localhost:${PORT}\n`);
 });

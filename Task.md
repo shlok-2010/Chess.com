@@ -21,8 +21,6 @@ Hey! If you want to make this chess app way more fun and professional, here is a
 - [x] **Highlight Moves**
   - Highlight the squares the last piece moved from and to so players can easily see what just happened.
   - When you click or drag a piece, show little dots on all the valid squares it can move to.
-- [ ] **Add Sound Effects**
-  - Play sounds when a piece moves, when a piece gets captured, when a King is in check, and when the game is over.
 - [x] **Make it look like Chess.com**
   - Give it a beautiful dark theme, clean sidebars, and make sure it looks neat on mobile screens.
 
@@ -45,3 +43,19 @@ Hey! If you want to make this chess app way more fun and professional, here is a
   - Show a list of all the moves played so far (like `1. e4 e5`) in a sidebar.
 - [ ] **Play Against the Computer**
   - If a player is alone, let them play against a simple AI or a chess computer (like Stockfish).
+  add the chess image in backround pe chess image type lagana hai 
+
+make a page the name box whee people chat with each other 
+ jase ki match spteror chat each other or jo match khel or bhi baat kar ske 
+
+chess board ki no
+
+image soft lagani hai 
+
+draw button ki  UI update karni hai 
+
+buttons ke upper hower lagana hai
+
+draw button pe timmer lagana hai 
+
+icnos change karne hai 

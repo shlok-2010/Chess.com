@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CrowdSolve - AI IDE Implementation Plan</title>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    max-width: 1000px;
+    margin:auto;
+    padding:40px;
+    line-height:1.7;
+}
+h1,h2{
+    color:#1e293b;
+}
+.phase{
+    border-left:4px solid #2563eb;
+    padding-left:15px;
+    margin-bottom:25px;
+}
+.task{
+    background:#f8fafc;
+    padding:10px;
+    margin:8px 0;
+    border-radius:6px;
+}
+</style>
+
+</head>
+<body>
+
+<h1>CrowdSolve - Simple AI IDE Implementation Plan</h1>
+
+<p>
+Goal: Build a working MVP first, then gradually add AI features.
+</p>
+
+<hr>
+
+<h2>Phase 1 - Project Setup</h2>
+
+<div class="phase">
+<div class="task">Create React + Vite frontend.</div>
+<div class="task">Setup Tailwind CSS.</div>
+<div class="task">Create Express.js backend.</div>
+<div class="task">Connect MongoDB Atlas.</div>
+<div class="task">Setup project folder structure.</div>
+</div>
+
+<p><strong>Deliverable:</strong> Running frontend and backend connected to MongoDB.</p>
+
+<hr>
+
+<h2>Phase 2 - Authentication</h2>
+
+<div class="phase">
+<div class="task">User Registration API.</div>
+<div class="task">User Login API.</div>
+<div class="task">JWT Authentication.</div>
+<div class="task">Protected Routes.</div>
+<div class="task">User Profile Page.</div>
+</div>
+
+<p><strong>Deliverable:</strong> Users can create accounts and login.</p>
+
+<hr>
+
+<h2>Phase 3 - Issue Reporting System</h2>
+
+<div class="phase">
+<div class="task">Create Report Issue Form.</div>
+<div class="task">Title & Description fields.</div>
+<div class="task">Image Upload using Cloudinary.</div>
+<div class="task">Location Selection.</div>
+<div class="task">Save issue in MongoDB.</div>
+</div>
+
+<p><strong>Deliverable:</strong> Citizens can report issues.</p>
+
+<hr>
+
+<h2>Phase 4 - Map Integration</h2>
+
+<div class="phase">
+<div class="task">Install Leaflet.</div>
+<div class="task">Integrate OpenStreetMap.</div>
+<div class="task">Display reported issues as markers.</div>
+<div class="task">Show issue popup details.</div>
+<div class="task">Current location support.</div>
+</div>
+
+<p><strong>Deliverable:</strong> Issues visible on map.</p>
+
+<hr>
+
+<h2>Phase 5 - Issue Feed</h2>
+
+<div class="phase">
+<div class="task">Create Issue Listing Page.</div>
+<div class="task">Issue Details Page.</div>
+<div class="task">Filter by Category.</div>
+<div class="task">Search Functionality.</div>
+<div class="task">Pagination.</div>
+</div>
+
+<p><strong>Deliverable:</strong> Users can browse all complaints.</p>
+
+<hr>
+
+<h2>Phase 6 - Community Features</h2>
+
+<div class="phase">
+<div class="task">Upvote System.</div>
+<div class="task">Comment System.</div>
+<div class="task">Issue Discussion Section.</div>
+<div class="task">Most Voted Issues.</div>
+</div>
+
+<p><strong>Deliverable:</strong> Community engagement enabled.</p>
+
+<hr>
+
+<h2>Phase 7 - Gemini AI Integration</h2>
+
+<div class="phase">
+<div class="task">Connect Gemini API.</div>
+<div class="task">Auto Categorize Issues.</div>
+<div class="task">Generate Issue Summary.</div>
+<div class="task">Priority Detection (Low/Medium/High).</div>
+<div class="task">Duplicate Issue Detection.</div>
+</div>
+
+<p><strong>Deliverable:</strong> AI-enhanced issue management.</p>
+
+<hr>
+
+<h2>Phase 8 - Admin Dashboard</h2>
+
+<div class="phase">
+<div class="task">Admin Login.</div>
+<div class="task">View All Issues.</div>
+<div class="task">Update Status.</div>
+<div class="task">Delete Spam Reports.</div>
+<div class="task">Issue Analytics.</div>
+</div>
+
+<p><strong>Deliverable:</strong> Authorities can manage complaints.</p>
+
+<hr>
+
+<h2>Phase 9 - Real-Time Updates</h2>
+
+<div class="phase">
+<div class="task">Integrate Socket.IO.</div>
+<div class="task">Live Comments.</div>
+<div class="task">Live Status Updates.</div>
+<div class="task">Real-Time Notifications.</div>
+</div>
+
+<p><strong>Deliverable:</strong> Dynamic user experience.</p>
+
+<hr>
+
+<h2>Phase 10 - Final Polish</h2>
+
+<div class="phase">
+<div class="task">Responsive Design.</div>
+<div class="task">Error Handling.</div>
+<div class="task">Loading States.</div>
+<div class="task">Toast Notifications.</div>
+<div class="task">Deployment (Vercel + Render).</div>
+</div>
+
+<p><strong>Deliverable:</strong> Production-ready MVP.</p>
+
+<hr>
+
+<h2>MVP Timeline</h2>
+
+<table border="1" cellpadding="10" cellspacing="0">
+<tr>
+<th>Day</th>
+<th>Tasks</th>
+</tr>
+<tr>
+<td>Day 1</td>
+<td>Setup + Authentication</td>
+</tr>
+<tr>
+<td>Day 2</td>
+<td>Issue Reporting + MongoDB</td>
+</tr>
+<tr>
+<td>Day 3</td>
+<td>Leaflet + OpenStreetMap</td>
+</tr>
+<tr>
+<td>Day 4</td>
+<td>Issue Feed + Upvotes</td>
+</tr>
+<tr>
+<td>Day 5</td>
+<td>Gemini AI Integration</td>
+</tr>
+<tr>
+<td>Day 6</td>
+<td>Admin Dashboard</td>
+</tr>
+<tr>
+<td>Day 7</td>
+<td>Socket.IO + Deployment</td>
+</tr>
+</table>
+
+<hr>
+
+<h2>Build Order (Very Important)</h2>
+
+<ol>
+<li>Authentication</li>
+<li>Issue Reporting</li>
+<li>Database Storage</li>
+<li>Map Visualization</li>
+<li>Community Voting</li>
+<li>Gemini AI Features</li>
+<li>Admin Dashboard</li>
+<li>Real-Time Features</li>
+<li>Deployment</li>
+</ol>
+
+<p>
+Never start with AI. First make issue reporting work end-to-end, then add Gemini on top of existing data.
+</p>
+
+</body>
+</html>
