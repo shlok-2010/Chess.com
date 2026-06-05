@@ -16,8 +16,18 @@ let moveHistory = [];
 
 // Timer display update
 const updateTimerDisplay = () => {
-    const whiteTimerEl = document.getElementById("whiteTimer");
-    const blackTimerEl = document.getElementById("blackTimer");
+    let whiteTimerEl, blackTimerEl;
+    
+    if (playerRole === 'b') {
+        // When board is flipped: the element with ID "blackTimer" (top) is White's timer,
+        // and the element with ID "whiteTimer" (bottom) is Black's timer.
+        whiteTimerEl = document.getElementById("blackTimer");
+        blackTimerEl = document.getElementById("whiteTimer");
+    } else {
+        whiteTimerEl = document.getElementById("whiteTimer");
+        blackTimerEl = document.getElementById("blackTimer");
+    }
+    
     const currentTurn = chess.turn(); // 'w' or 'b'
     
     if (whiteTimerEl) {
@@ -626,11 +636,13 @@ const getPieceUnicode = (piece) => {
 socket.on("playerRole", function (role) {
     playerRole = role;
     renderBoard();
+    updateTimerDisplay();
 });
 
 socket.on("spectatorRole", function () {
     playerRole = null;
     renderBoard();
+    updateTimerDisplay();
 });
 
 socket.on("boardState", function (fen) {
@@ -639,6 +651,7 @@ socket.on("boardState", function (fen) {
     clearLegalMoves();
     renderBoard();
     updateMoveHistoryDisplay();
+    closePopup(); // Automatically close game over popup when the board resets/restarts
 });
 
 socket.on("move", function (move) {
@@ -712,11 +725,17 @@ socket.on("moveHistory", function (history) {
     updateMoveHistoryDisplay();
 });
 
-// Game over listener (timeout)
+// Game over listener
 socket.on("gameOver", function (data) {
     if (data.reason === 'timeout') {
         const winnerText = data.winner === 'w' ? 'White' : 'Black';
         showGamePopup("TIME'S UP!", `${winnerText} wins on time!`);
+    } else if (data.reason === 'checkmate') {
+        const winnerText = data.winner === 'w' ? 'White' : 'Black';
+        showGamePopup("CHECKMATE!", `${winnerText} wins the game!`);
+    } else {
+        const reasonText = data.reason ? data.reason.toUpperCase() : "DRAW";
+        showGamePopup("DRAW!", `Game ended in a draw (${reasonText})!`);
     }
 });
 
