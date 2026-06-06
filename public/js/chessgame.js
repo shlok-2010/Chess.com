@@ -533,7 +533,11 @@ function showGamePopup(title, message, isCheckmate = false) {
 
 function closePopup(emitRestart = false) {
     document.getElementById("gamePopup").classList.add("hidden");
-    if (emitRestart) socket.emit("restartGame");
+    // Always emit restartGame when closing popup after game over
+    // This ensures both players get a fresh game
+    if (emitRestart || chess.game_over()) {
+        socket.emit("restartGame");
+    }
 }
 
 /* ============================================================
@@ -575,6 +579,11 @@ socket.on("boardState", function (fen) {
     if (offerDrawBtn) offerDrawBtn.classList.remove("hidden");
     if (replayBtn)    replayBtn.classList.add("hidden");
     updateHUD();
+    // Reset local timers when receiving new board state
+    // This ensures synchronization with server
+    whiteTime = 30;
+    blackTime = 30;
+    updateTimerDisplay();
 });
 
 socket.on("move", function (move) {
@@ -620,6 +629,9 @@ socket.on("gameOver", function (data) {
     if (rBtn)  rBtn.classList.add("hidden");
     if (oBtn)  oBtn.classList.add("hidden");
     if (rpBtn) rpBtn.classList.remove("hidden");
+    
+    // Note: The server automatically resets the game after gameOver
+    // The popup close will trigger restartGame to sync both clients
 });
 
 socket.on("resigned", function (data) {
@@ -632,6 +644,9 @@ socket.on("resigned", function (data) {
     if (rBtn)  rBtn.classList.add("hidden");
     if (oBtn)  oBtn.classList.add("hidden");
     if (rpBtn) rpBtn.classList.remove("hidden");
+    
+    // Note: The server automatically resets the game after resignation
+    // The popup close will trigger restartGame to sync both clients
 });
 
 socket.on("drawOffered", function () {
@@ -654,6 +669,9 @@ socket.on("drawDeclared", function () {
     if (rBtn)  rBtn.classList.add("hidden");
     if (oBtn)  oBtn.classList.add("hidden");
     if (rpBtn) rpBtn.classList.remove("hidden");
+    
+    // Note: The server automatically resets the game after draw
+    // The popup close will trigger restartGame to sync both clients
 });
 
 /* ============================================================
@@ -688,4 +706,5 @@ if (offerDrawBtn) {
 console.log("Chess game initializing...");
 console.log("Move history element:", document.getElementById("moveHistory"));
 console.log("Move count badge element:", document.getElementById("moveCountBadge"));
+
 renderBoard();

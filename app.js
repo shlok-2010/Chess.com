@@ -42,6 +42,12 @@
                   clearInterval(timerInterval);
                   timerInterval = null;
                   io.emit("gameOver", { winner: 'b', reason: 'timeout' });
+                  
+                  // Automatically reset the game state after timeout
+                  resetGame();
+                  io.emit("boardState", chess.fen());
+                  io.emit("timerUpdate", { whiteTime, blackTime });
+                  io.emit("moveHistory", moveHistory);
                   return;
               }
           } else {
@@ -52,6 +58,12 @@
                   clearInterval(timerInterval);
                   timerInterval = null;
                   io.emit("gameOver", { winner: 'w', reason: 'timeout' });
+                  
+                  // Automatically reset the game state after timeout
+                  resetGame();
+                  io.emit("boardState", chess.fen());
+                  io.emit("timerUpdate", { whiteTime, blackTime });
+                  io.emit("moveHistory", moveHistory);
                   return;
               }
           }
@@ -61,10 +73,12 @@
   }
 
   function resetGame() {
+      chess.reset();
       whiteTime = INITIAL_TIME;
       blackTime = INITIAL_TIME;
       moveHistory = [];
       gameActive = true;
+      currentPlayer = "W";
       if (timerInterval) clearInterval(timerInterval);
       timerInterval = null;
       if (players.white && players.black) {
@@ -185,13 +199,16 @@ io.on("connection", function(uniquesocket){
                     gameActive = false;
                     
                     io.emit("gameOver", { winner, reason });
+                    
+                    // Automatically reset the game state after game ends
+                    // This ensures new players joining get a fresh game
+                    resetGame();
+                    io.emit("boardState", chess.fen());
+                    io.emit("timerUpdate", { whiteTime, blackTime });
+                    io.emit("moveHistory", moveHistory);
                 } else {
-                    // Reset the current player's time to 30 seconds after move
-                    if (chess.turn() === 'w') {
-                        blackTime = INITIAL_TIME;
-                    } else {
-                        whiteTime = INITIAL_TIME;
-                    }
+                    // Timer continues running for the new active player
+                    // No time reset - just continue counting down
                     io.emit("timerUpdate", { whiteTime, blackTime });
                     
                     // Start timer if not already running
@@ -213,13 +230,20 @@ io.on("connection", function(uniquesocket){
         if (!gameActive) return;
         if (uniquesocket.id === players.white || uniquesocket.id === players.black) {
             const resigner = uniquesocket.id === players.white ? 'w' : 'b';
-            io.emit("resigned", { resigner });
             
             if (timerInterval) {
                 clearInterval(timerInterval);
                 timerInterval = null;
             }
             gameActive = false;
+            
+            io.emit("resigned", { resigner });
+            
+            // Automatically reset the game state after resignation
+            resetGame();
+            io.emit("boardState", chess.fen());
+            io.emit("timerUpdate", { whiteTime, blackTime });
+            io.emit("moveHistory", moveHistory);
         }
     });
 
@@ -238,12 +262,19 @@ io.on("connection", function(uniquesocket){
     uniquesocket.on("drawResponse", (data) => {
         if (!gameActive) return;
         if (data.accepted) {
-            io.emit("drawDeclared", { reason: 'agreement' });
             if (timerInterval) {
                 clearInterval(timerInterval);
                 timerInterval = null;
             }
             gameActive = false;
+            
+            io.emit("drawDeclared", { reason: 'agreement' });
+            
+            // Automatically reset the game state after draw
+            resetGame();
+            io.emit("boardState", chess.fen());
+            io.emit("timerUpdate", { whiteTime, blackTime });
+            io.emit("moveHistory", moveHistory);
         } else {
             let offererId = null;
             if (uniquesocket.id === players.white) {
@@ -258,13 +289,13 @@ io.on("connection", function(uniquesocket){
     });
 
     uniquesocket.on("restartGame", () => {
-        if (!gameActive) {
-            chess.reset();
-            resetGame();
-            io.emit("boardState", chess.fen());
-            io.emit("timerUpdate", { whiteTime, blackTime });
-            io.emit("moveHistory", moveHistory);
-        }
+        // Allow restart regardless of game state
+        // This ensures both players can trigger a fresh game
+        chess.reset();
+        resetGame();
+        io.emit("boardState", chess.fen());
+        io.emit("timerUpdate", { whiteTime, blackTime });
+        io.emit("moveHistory", moveHistory);
     });
 });
 
