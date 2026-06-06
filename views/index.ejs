@@ -3,194 +3,397 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <title>Chess — Live Multiplayer</title>
+    <meta name="description" content="Play chess online in real-time with a premium cyberpunk dashboard interface." />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+
     <style>
+      /* ============================================================
+         CSS VARIABLES
+      ============================================================ */
+      :root {
+        --neon-purple: #a855f7;
+        --neon-blue:   #3b82f6;
+        --neon-cyan:   #06b6d4;
+        --neon-green:  #22c55e;
+        --neon-red:    #ef4444;
+        --neon-amber:  #f59e0b;
+
+        --bg-void:    #030308;
+        --bg-surface: #0d0d1a;
+        --bg-card:    rgba(13, 13, 26, 0.75);
+        --bg-glass:   rgba(255, 255, 255, 0.04);
+        --bg-glass-h: rgba(255, 255, 255, 0.07);
+
+        --border-neon:   rgba(168, 85, 247, 0.4);
+        --border-subtle: rgba(255, 255, 255, 0.08);
+
+        --text-primary:   #f1f0ff;
+        --text-secondary: #a8a0c8;
+        --text-muted:     #524a72;
+
+        --glow-purple: 0 0 20px rgba(168, 85, 247, 0.45), 0 0 60px rgba(168, 85, 247, 0.12);
+        --glow-cyan:   0 0 20px rgba(6, 182, 212, 0.45),  0 0 60px rgba(6, 182, 212, 0.12);
+        --glow-green:  0 0 12px rgba(34, 197, 94, 0.8),   0 0 28px rgba(34, 197, 94, 0.3);
+
+        /* Classic chess board */
+        --board-light: #f0d9b5;
+        --board-dark:  #b58863;
+
+        --font-hud:  'Orbitron', 'Rajdhani', monospace;
+        --font-body: 'Inter', sans-serif;
+      }
+
+      /* ============================================================
+         RESET & BASE
+      ============================================================ */
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html { scroll-behavior: smooth; }
+
+      body {
+        background-color: var(--bg-void);
+        background-image: url('https://images.unsplash.com/photo-1529699211952-734e80c4d42b?q=80&w=2070&auto=format&fit=crop');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+        font-family: var(--font-body);
+        color: var(--text-primary);
+        min-height: 100vh;
+        overflow-x: hidden;
+        position: relative;
+      }
+
+      /* Animated BG glow blobs with dark overlay */
+      body::before {
+        content: '';
+        position: fixed; inset: 0;
+        background:
+          rgba(3, 3, 8, 0.85),
+          radial-gradient(ellipse 70% 55% at 15% 10%,  rgba(168, 85, 247, 0.11) 0%, transparent 60%),
+          radial-gradient(ellipse 55% 50% at 85% 90%,  rgba(59, 130, 246, 0.09) 0%, transparent 60%),
+          radial-gradient(ellipse 40% 35% at 50% 50%,  rgba(6, 182, 212, 0.04) 0%, transparent 70%);
+        pointer-events: none;
+        z-index: 0;
+        animation: bgPulse 8s ease-in-out infinite alternate;
+      }
+
+      @keyframes bgPulse {
+        from { opacity: 0.7; }
+        to   { opacity: 1;   }
+      }
+
+      /* Grid overlay */
+      body::after {
+        content: '';
+        position: fixed; inset: 0;
+        background-image:
+          linear-gradient(rgba(168, 85, 247, 0.025) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(168, 85, 247, 0.025) 1px, transparent 1px);
+        background-size: 50px 50px;
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      /* Scrollbar */
+      ::-webkit-scrollbar { width: 5px; }
+      ::-webkit-scrollbar-track { background: var(--bg-surface); }
+      ::-webkit-scrollbar-thumb { background: var(--neon-purple); border-radius: 99px; }
+
+      /* ============================================================
+         APP WRAPPER
+      ============================================================ */
+      #app-wrapper {
+        position: relative;
+        z-index: 1;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px 16px;
+      }
+
+      /* ============================================================
+         OUTER GAME CARD
+      ============================================================ */
+      .game-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-neon);
+        border-radius: 20px;
+        backdrop-filter: blur(24px);
+        box-shadow: var(--glow-purple), 0 40px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.06);
+        padding: 20px;
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+        position: relative;
+        overflow: hidden;
+      }
+
+      /* Animated top accent bar */
+      .game-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, var(--neon-purple), var(--neon-blue), var(--neon-cyan), transparent);
+        background-size: 300% auto;
+        animation: accentShift 5s linear infinite;
+      }
+
+      @keyframes accentShift {
+        0%   { background-position: 0% center; }
+        100% { background-position: 300% center; }
+      }
+
+      /* Cyber corners */
+      .corner {
+        position: absolute;
+        width: 14px; height: 14px;
+        border-color: var(--neon-purple);
+        border-style: solid;
+        opacity: 0.6;
+      }
+      .corner.tl { top: 8px; left: 8px;   border-width: 2px 0 0 2px; }
+      .corner.tr { top: 8px; right: 8px;  border-width: 2px 2px 0 0; }
+      .corner.bl { bottom: 8px; left: 8px;  border-width: 0 0 2px 2px; }
+      .corner.br { bottom: 8px; right: 8px; border-width: 0 2px 2px 0; }
+
+      /* ============================================================
+         BOARD COLUMN
+      ============================================================ */
+      .board-column {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+        flex-shrink: 0;
+      }
+
+      /* ============================================================
+         PLAYER STRIP  (above & below board)
+      ============================================================ */
+      .player-strip {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 9px 14px;
+        background: rgba(0, 0, 0, 0.35);
+        border: 1px solid var(--border-subtle);
+        border-radius: 12px;
+        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+      }
+
+      .player-strip.active-strip {
+        border-color: rgba(6, 182, 212, 0.5);
+        box-shadow: 0 0 14px rgba(6, 182, 212, 0.12);
+      }
+
+      .strip-left { display: flex; align-items: center; gap: 10px; }
+
+      .strip-avatar {
+        width: 36px; height: 36px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--neon-purple), var(--neon-blue));
+        display: flex; align-items: center; justify-content: center;
+        font-size: 18px;
+        border: 1px solid rgba(168, 85, 247, 0.45);
+        flex-shrink: 0;
+      }
+
+      .strip-info { display: flex; flex-direction: column; gap: 2px; }
+
+      .strip-name {
+        font-family: var(--font-hud);
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        color: var(--text-primary);
+      }
+
+      .strip-indicator-row {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+
+      .strip-captures {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1px;
+        font-size: 13px;
+        align-items: center;
+      }
+
+      .strip-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      /* Timer pill */
+      .timer-pill {
+        font-family: var(--font-hud);
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        padding: 6px 14px;
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid var(--border-subtle);
+        min-width: 70px;
+        text-align: center;
+        transition: all 0.3s ease;
+      }
+
+      .timer-pill.timer-normal  { color: var(--neon-cyan);  text-shadow: 0 0 12px rgba(6,182,212,0.65); border-color: rgba(6,182,212,0.2); }
+      .timer-pill.timer-danger  { color: var(--neon-red);   text-shadow: 0 0 12px rgba(239,68,68,0.8);  border-color: rgba(239,68,68,0.3); animation: dangerPulse 0.8s ease-in-out infinite; }
+      .timer-pill.timer-inactive{ color: var(--text-muted); border-color: transparent; }
+
+      @keyframes dangerPulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+      /* Turn dot */
+      .turn-dot-active {
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        background: var(--neon-green);
+        box-shadow: var(--glow-green);
+        animation: turnBlink 1.5s ease-in-out infinite;
+        display: inline-block;
+      }
+      .turn-dot-inactive {
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        background: var(--text-muted);
+        display: inline-block;
+      }
+      @keyframes turnBlink {
+        0%,100% { box-shadow: var(--glow-green); transform: scale(1); }
+        50%      { box-shadow: 0 0 20px rgba(34,197,94,1), 0 0 50px rgba(34,197,94,0.5); transform: scale(1.3); }
+      }
+
+      /* Captured pieces */
+      .captured-piece {
+        width: 20px;
+        height: 20px;
+        object-fit: contain;
+        transition: transform 0.2s ease;
+        display: inline-block;
+        filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
+      }
+      .captured-piece:hover { transform: scale(1.3) translateY(-2px); }
+      .captured-piece.white-piece { filter: drop-shadow(0 1px 2px rgba(0,0,0,0.5)); }
+      .captured-piece.black-piece { filter: drop-shadow(0 1px 2px rgba(0,0,0,0.4)); }
+
+      /* ============================================================
+         CHESSBOARD
+      ============================================================ */
+      .chessboard-outer {
+        position: relative;
+        padding: 3px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, var(--neon-purple), var(--neon-blue), var(--neon-cyan));
+        box-shadow:
+          0 0 35px rgba(168, 85, 247, 0.35),
+          0 0 70px rgba(59, 130, 246, 0.18),
+          0 24px 50px rgba(0, 0, 0, 0.75);
+        animation: boardGlow 4s ease-in-out infinite alternate;
+      }
+
+      @keyframes boardGlow {
+        from { box-shadow: 0 0 35px rgba(168,85,247,0.35), 0 0 70px rgba(59,130,246,0.18), 0 24px 50px rgba(0,0,0,0.75); }
+        to   { box-shadow: 0 0 55px rgba(168,85,247,0.6),  0 0 90px rgba(59,130,246,0.3),  0 24px 50px rgba(0,0,0,0.75); }
+      }
+
+      .chessboard-wrapper { border-radius: 8px; overflow: hidden; }
+
       .chessboard {
         display: grid;
         grid-template-columns: repeat(8, minmax(0, 1fr));
-        grid-template-rows: repeat(8, minmax(0, 1fr));
-        width: 400px;
-        height: 400px;
-        transform: rotate(0deg);
+        grid-template-rows:    repeat(8, minmax(0, 1fr));
+        width: 440px;
+        height: 440px;
       }
 
-      .piece.white {
-        color: white;
-        filter: drop-shadow(0 0 2px rgba(0, 0, 0, 1));
-      }
-
-      .piece.black {
-        color: black;
-      }
-
-      .flipped {
-        transform: rotate(180deg);
-      }
-
+      /* SQUARES — Classic Chess.com colours */
       .square {
         display: flex;
         align-items: center;
         justify-content: center;
+        position: relative;
+        transition: background-color 0.12s ease;
       }
 
-      .square.light {
-        background-color: #f0d9b5;
-      }
+      .square.light { background-color: var(--board-light); }
+      .square.dark  { background-color: var(--board-dark);  }
 
-      .square.dark {
-        background-color: #b58863;
-      }
+      .square.light:hover { background-color: #f5e3c3; }
+      .square.dark:hover  { background-color: #c9a07a; }
 
+      .square.selected-square { background: rgba(255, 215, 0, 0.52) !important; }
+
+      /* PIECES */
       .piece {
-        font-size: 36px;
-        cursor: pointer;
-      }
-
-      .piece.draggable {
-        cursor: grab;
-      }
-
-      .dragging {
-        opacity: 0.5;
-      }
-
-      .flipped .piece {
-        transform: rotate(180deg);
-      }
-
-      .game-popup {
-        position: fixed;
-        top: 0;
-        left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, 0.7);
-
-        display: flex;
-        justify-content: center;
-        align-items: center;
-
-        z-index: 9999;
-      }
-
-      .hidden {
-        display: none;
-      }
-
-      .popup-box {
-        background: white;
-        padding: 30px;
-        border-radius: 15px;
-        text-align: center;
-        width: 320px;
-
-        animation: popupAnim 0.3s ease;
-      }
-
-      .popup-box h1 {
-        margin-bottom: 10px;
-        color: #222;
-      }
-
-      .popup-box p {
-        font-size: 18px;
-        margin-bottom: 20px;
-        color: black;
-      }
-
-      .popup-box button {
-        padding: 10px 20px;
-        border: none;
-        background: black;
-        color: white;
-        border-radius: 8px;
+        max-width: 42px;
+        max-height: 42px;
+        object-fit: contain;
         cursor: pointer;
-        transition: all 0.3s ease;
+        transition: transform 0.12s ease, filter 0.12s ease;
+        z-index: 2;
+        position: relative;
+        user-select: none;
+        filter: drop-shadow(0 2px 3px rgba(0,0,0,0.4));
       }
 
-      .popup-box button:hover {
-        background: #333;
-        transform: scale(1.05);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      .piece:hover { transform: scale(1.14) translateY(-3px); filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5)) brightness(1.1); }
+
+      .piece.white {
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)) drop-shadow(0 0 8px rgba(168,85,247,0.3));
       }
 
-      /* Promotion dialog piece buttons */
-      .promo-btn {
-        display: inline-flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 4px;
-        padding: 10px 14px;
-        border: 2px solid #333;
-        border-radius: 10px;
-        background: #1a1a1a;
-        color: #fff;
-        cursor: pointer;
-        font-size: 2rem;
-        transition: all 0.3s ease;
+      .piece.black {
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6)) drop-shadow(0 0 8px rgba(59,130,246,0.3));
       }
 
-      .promo-btn:hover {
-        background: #2d2d2d;
-        transform: scale(1.08);
-        border-color: #888;
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-      }
+      .piece.draggable { cursor: grab; }
+      .dragging { opacity: 0.45; transform: scale(0.9); }
 
-      .promo-btn span.label {
-        font-size: 0.65rem;
-        color: #aaa;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-      }
+      .flipped { transform: rotate(180deg); }
+      .flipped .piece { transform: rotate(180deg); }
+      .flipped .piece:hover { transform: rotate(180deg) scale(1.14) translateY(3px); }
 
-      @keyframes popupAnim {
-        from {
-          transform: scale(0.7);
-          opacity: 0;
-        }
-
-        to {
-          transform: scale(1);
-          opacity: 1;
-        }
-      }
-
-      /* =========================
-   RED CHECK EFFECT
-========================= */
-
+      /* CHECK */
       .king-in-check {
-        background: radial-gradient(circle, rgba(255, 0, 0, 0.85) 0%, rgba(200, 0, 0, 0.5) 50%, transparent 100%) !important;
-        box-shadow: inset 0 0 12px rgba(255, 0, 0, 0.8), 0 0 16px rgba(255, 0, 0, 0.5);
-        animation: checkPulse 1s ease-in-out infinite;
+        background: radial-gradient(circle, rgba(255,30,30,0.88) 0%, rgba(200,0,0,0.5) 50%, transparent 100%) !important;
+        box-shadow: inset 0 0 14px rgba(255,0,0,0.9), 0 0 20px rgba(255,0,0,0.55);
+        animation: checkPulse 0.9s ease-in-out infinite;
       }
 
       @keyframes checkPulse {
-        0%, 100% { box-shadow: inset 0 0 12px rgba(255, 0, 0, 0.8), 0 0 16px rgba(255, 0, 0, 0.5); }
-        50% { box-shadow: inset 0 0 18px rgba(255, 0, 0, 1), 0 0 24px rgba(255, 0, 0, 0.7); }
+        0%,100% { box-shadow: inset 0 0 14px rgba(255,0,0,0.9), 0 0 20px rgba(255,0,0,0.55); }
+        50%     { box-shadow: inset 0 0 22px rgba(255,0,0,1),   0 0 35px rgba(255,0,0,0.75); }
       }
 
-      /* =========================
-   LEGAL MOVE INDICATORS
-========================= */
-
+      /* LEGAL MOVES */
       .square .move-dot {
-        width: 28%;
-        height: 28%;
+        width: 30%; height: 30%;
         border-radius: 50%;
-        background: rgba(0, 0, 0, 0.25);
+        background: rgba(0, 0, 0, 0.22);
+        box-shadow: 0 0 6px rgba(168, 85, 247, 0.4);
         pointer-events: none;
         position: absolute;
         z-index: 5;
       }
 
       .square .capture-ring {
-        width: 90%;
-        height: 90%;
+        width: 88%; height: 88%;
         border-radius: 50%;
-        border: 5px solid rgba(0, 0, 0, 0.25);
+        border: 5px solid rgba(0, 0, 0, 0.22);
         background: transparent;
         pointer-events: none;
         position: absolute;
@@ -198,247 +401,618 @@
         box-sizing: border-box;
       }
 
-      .square {
-        position: relative;
-      }
-
-      .square.selected-square {
-        background: rgba(255, 255, 80, 0.55) !important;
-      }
-
-      /* =========================
-   TURN INDICATOR DOT
-========================= */
-
-      .turn-dot-active {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: #22c55e;
-        box-shadow: 0 0 8px rgba(34, 197, 94, 0.7), 0 0 3px rgba(34, 197, 94, 0.4);
-        animation: turnPulse 1.5s ease-in-out infinite;
-      }
-
-      .turn-dot-inactive {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: #52525b;
-        box-shadow: none;
-        animation: none;
-      }
-
-      @keyframes turnPulse {
-        0%, 100% { box-shadow: 0 0 8px rgba(34, 197, 94, 0.7), 0 0 3px rgba(34, 197, 94, 0.4); }
-        50% { box-shadow: 0 0 14px rgba(34, 197, 94, 0.9), 0 0 6px rgba(34, 197, 94, 0.6); }
-      }
-
-      /* Premium Captured Pieces styles */
-      .captured-piece {
-        display: inline-block;
-        font-size: 1.6rem;
-        line-height: 1;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      /* COORDINATES */
+      .board-coordinate {
+        position: absolute;
+        font-size: 10px;
+        font-weight: 800;
+        font-family: var(--font-hud);
+        pointer-events: none;
         user-select: none;
       }
 
-      .captured-piece:hover {
-        transform: scale(1.2);
+      .coord-tl { top: 2px; left: 3px; }
+      .flipped .coord-tl { top: auto; left: auto; bottom: 2px; right: 3px; }
+
+      .coord-tr { top: 2px; right: 3px; }
+      .flipped .coord-tr { top: auto; right: auto; bottom: 2px; left: 3px; }
+
+      .coord-bl { bottom: 2px; left: 3px; }
+      .flipped .coord-bl { bottom: auto; left: auto; top: 2px; right: 3px; }
+
+      .coord-br { bottom: 2px; right: 3px; }
+      .flipped .coord-br { bottom: auto; right: auto; top: 2px; left: 3px; }
+
+      .text-light-square { color: var(--board-light); }
+      .text-dark-square  { color: var(--board-dark);  }
+
+      .flipped .board-coordinate { transform: rotate(180deg); }
+
+      /* ============================================================
+         ACTION BUTTONS
+      ============================================================ */
+      .action-row {
+        display: flex;
+        gap: 8px;
       }
 
-      .captured-piece.white-piece {
-        color: #ffffff;
-        filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.9));
-      }
-
-      .captured-piece.black-piece {
-        color: #121214;
-        filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.8));
-      }
-
-      /* Timer styles */
-      .timer-normal {
-        color: #22c55e;
-        font-weight: 600;
-      }
-
-      .timer-danger {
-        color: #ef4444;
+      .cyber-btn {
+        flex: 1;
+        padding: 9px 10px;
+        border: 1px solid;
+        border-radius: 9px;
+        font-family: var(--font-hud);
+        font-size: 9.5px;
         font-weight: 700;
-        animation: timerPulse 1s ease-in-out infinite;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.22s ease;
+        backdrop-filter: blur(10px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        position: relative;
+        overflow: hidden;
       }
 
-      .timer-inactive {
-        color: #6b7280;
-        font-weight: 500;
+      .cyber-btn::before {
+        content: '';
+        position: absolute; inset: 0;
+        background: linear-gradient(135deg, rgba(255,255,255,0.05), transparent);
+        opacity: 0;
+        transition: opacity 0.22s;
       }
 
-      @keyframes timerPulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.6; }
+      .cyber-btn:hover::before { opacity: 1; }
+      .cyber-btn:hover  { transform: translateY(-2px); }
+      .cyber-btn:active { transform: translateY(0) scale(0.97); }
+
+      .btn-resign {
+        background: rgba(239,68,68,0.08);
+        border-color: rgba(239,68,68,0.35);
+        color: #fca5a5;
+      }
+      .btn-resign:hover {
+        background: rgba(239,68,68,0.2);
+        border-color: rgba(239,68,68,0.7);
+        box-shadow: 0 0 14px rgba(239,68,68,0.28);
+        color: #fff;
       }
 
-      /* Move history sidebar */
+      .btn-draw {
+        background: rgba(168,85,247,0.08);
+        border-color: rgba(168,85,247,0.35);
+        color: #c4b5fd;
+      }
+      .btn-draw:hover {
+        background: rgba(168,85,247,0.2);
+        border-color: rgba(168,85,247,0.7);
+        box-shadow: 0 0 14px rgba(168,85,247,0.28);
+        color: #fff;
+      }
+
+      .btn-replay {
+        background: rgba(34,197,94,0.08);
+        border-color: rgba(34,197,94,0.35);
+        color: #86efac;
+      }
+      .btn-replay:hover {
+        background: rgba(34,197,94,0.2);
+        border-color: rgba(34,197,94,0.7);
+        box-shadow: 0 0 14px rgba(34,197,94,0.3);
+        color: #fff;
+      }
+
+      .hidden { display: none !important; }
+
+      /* ============================================================
+         MOVE HISTORY PANEL
+      ============================================================ */
+      .move-history-panel {
+        width: 220px;
+        flex-shrink: 0;
+        background: rgba(8, 8, 20, 0.6);
+        border: 1px solid var(--border-neon);
+        border-radius: 16px;
+        backdrop-filter: blur(20px);
+        box-shadow: var(--glow-purple), inset 0 1px 0 rgba(255,255,255,0.04);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        align-self: stretch;
+      }
+
+      .panel-header {
+        padding: 13px 14px 9px;
+        border-bottom: 1px solid var(--border-subtle);
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        background: rgba(168, 85, 247, 0.05);
+        flex-shrink: 0;
+      }
+
+      .panel-title {
+        font-family: var(--font-hud);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 2.5px;
+        text-transform: uppercase;
+        color: var(--neon-purple);
+        flex: 1;
+      }
+
+      .move-count-badge {
+        font-family: var(--font-hud);
+        font-size: 9px;
+        background: rgba(168,85,247,0.18);
+        border: 1px solid rgba(168,85,247,0.4);
+        color: var(--neon-purple);
+        padding: 2px 7px;
+        border-radius: 99px;
+        letter-spacing: 1px;
+      }
+
       .move-history-container {
-        width: 200px;
-        max-height: 400px;
+        flex: 1;
         overflow-y: auto;
-        background: rgba(24, 24, 27, 0.6);
-        border: 1px solid rgba(63, 63, 70, 0.4);
+        padding: 8px;
+      }
+
+      .move-history-container::-webkit-scrollbar { width: 3px; }
+      .move-history-container::-webkit-scrollbar-track { background: transparent; }
+      .move-history-container::-webkit-scrollbar-thumb { background: var(--neon-purple); border-radius: 99px; }
+
+      .move-row {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        padding: 4px 5px;
+        border-radius: 5px;
+        margin-bottom: 1px;
+        transition: background 0.15s ease;
+        position: relative;
+      }
+
+      .move-row:hover { background: var(--bg-glass-h); }
+
+      .move-row::before {
+        content: '';
+        position: absolute;
+        left: 0; top: 50%; transform: translateY(-50%);
+        width: 2px; height: 55%;
+        background: linear-gradient(to bottom, var(--neon-purple), var(--neon-blue));
+        border-radius: 1px;
+        opacity: 0;
+        transition: opacity 0.15s;
+      }
+      .move-row:hover::before { opacity: 1; }
+
+      .move-number {
+        width: 26px;
+        font-family: var(--font-hud);
+        font-size: 9.5px;
+        color: var(--text-muted);
+        font-weight: 600;
+        flex-shrink: 0;
+      }
+
+      .move-san {
+        flex: 1;
+        font-family: 'Rajdhani', monospace;
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        padding: 2px 4px;
+        border-radius: 3px;
+        cursor: pointer;
+        transition: all 0.12s;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        min-width: 0;
+      }
+
+      .move-san:hover { background: var(--bg-glass); color: var(--text-primary); }
+      .move-san.empty { cursor: default; pointer-events: none; }
+
+      .move-color-dot {
+        width: 7px; height: 7px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+
+      .dot-white {
+        background: #fff;
+        box-shadow: 0 0 3px rgba(255,255,255,0.5);
+        border: 1px solid rgba(168,85,247,0.4);
+      }
+
+      .dot-black {
+        background: #1a1209;
+        box-shadow: 0 0 3px rgba(59,130,246,0.6);
+        border: 1px solid rgba(59,130,246,0.5);
+      }
+
+      .no-moves-msg {
+        text-align: center;
+        padding: 28px 8px;
+        font-family: var(--font-hud);
+        font-size: 10px;
+        letter-spacing: 1px;
+        color: var(--text-muted);
+      }
+
+      /* Status row at bottom of history panel */
+      .panel-status {
+        padding: 10px 14px;
+        border-top: 1px solid var(--border-subtle);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+
+      #gameTurnStatus {
+        font-family: var(--font-hud);
+        font-size: 9px;
+        letter-spacing: 1.5px;
+        padding: 4px 10px;
+        border-radius: 6px;
+        background: rgba(245,158,11,0.1);
+        border: 1px solid rgba(245,158,11,0.3);
+        color: var(--neon-amber);
+        flex: 1;
+        text-align: center;
+      }
+
+      /* ============================================================
+         POPUPS / MODALS
+      ============================================================ */
+      .game-popup {
+        position: fixed; inset: 0;
+        background: rgba(3, 3, 8, 0.85);
+        backdrop-filter: blur(12px);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        animation: overlayIn 0.25s ease;
+      }
+
+      @keyframes overlayIn { from{opacity:0} to{opacity:1} }
+
+      .popup-box {
+        background: rgba(10, 10, 22, 0.97);
+        border: 1px solid var(--border-neon);
+        border-radius: 20px;
+        padding: 36px 32px;
+        text-align: center;
+        width: min(400px, 92vw);
+        box-shadow: var(--glow-purple), 0 0 100px rgba(168,85,247,0.22), 0 40px 80px rgba(0,0,0,0.7);
+        animation: popupBounce 0.38s cubic-bezier(0.34, 1.56, 0.64, 1);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .popup-box::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--neon-purple), var(--neon-blue), var(--neon-cyan), var(--neon-purple));
+        background-size: 300% auto;
+        animation: accentShift 3s linear infinite;
+      }
+
+      @keyframes popupBounce { from{transform:scale(0.6) translateY(40px);opacity:0} to{transform:scale(1) translateY(0);opacity:1} }
+
+      .popup-trophy {
+        font-size: 60px;
+        margin-bottom: 10px;
+        animation: trophyFloat 2s ease-in-out infinite;
+        filter: drop-shadow(0 0 18px var(--neon-amber));
+      }
+
+      @keyframes trophyFloat {
+        0%,100% { transform: translateY(0)   rotate(-5deg); }
+        50%     { transform: translateY(-9px) rotate(5deg);  }
+      }
+
+      #popupTitle {
+        font-family: var(--font-hud);
+        font-size: 28px;
+        font-weight: 900;
+        letter-spacing: 4px;
+        background: linear-gradient(90deg, var(--neon-purple), var(--neon-cyan));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 8px;
+      }
+
+      #popupMessage {
+        font-size: 14px;
+        color: var(--text-secondary);
+        margin-bottom: 26px;
+        font-family: 'Rajdhani', sans-serif;
+        letter-spacing: 0.5px;
+      }
+
+      .popup-buttons { display: flex; gap: 10px; justify-content: center; }
+
+      .popup-btn {
+        padding: 11px 26px;
+        border-radius: 9px;
+        border: 1px solid;
+        font-family: var(--font-hud);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.22s ease;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .popup-btn::before {
+        content: '';
+        position: absolute; inset: 0;
+        background: linear-gradient(135deg, rgba(255,255,255,0.08), transparent);
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+
+      .popup-btn:hover::before { opacity: 1; }
+
+      .btn-close-popup {
+        background: rgba(255,255,255,0.05);
+        border-color: var(--border-subtle);
+        color: var(--text-secondary);
+      }
+      .btn-close-popup:hover { border-color: rgba(255,255,255,0.3); color: var(--text-primary); transform: translateY(-2px); }
+
+      .btn-play-again {
+        background: linear-gradient(135deg, rgba(168,85,247,0.22), rgba(59,130,246,0.22));
+        border-color: var(--neon-purple);
+        color: var(--neon-purple);
+        box-shadow: 0 0 12px rgba(168,85,247,0.18);
+      }
+      .btn-play-again:hover {
+        background: linear-gradient(135deg, rgba(168,85,247,0.45), rgba(59,130,246,0.45));
+        box-shadow: 0 0 28px rgba(168,85,247,0.45);
+        color: #fff;
+        transform: translateY(-2px);
+      }
+
+      /* PROMOTION */
+      .promo-btn {
+        display: inline-flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        padding: 14px 18px;
+        border: 1px solid var(--border-neon);
         border-radius: 12px;
-        padding: 12px;
+        background: var(--bg-glass);
+        color: var(--text-primary);
+        cursor: pointer;
+        font-size: 2.2rem;
+        transition: all 0.28s ease;
+        position: relative;
+        overflow: hidden;
       }
 
-      .move-history-container::-webkit-scrollbar {
-        width: 6px;
+      .promo-btn::before {
+        content: '';
+        position: absolute; inset: 0;
+        background: linear-gradient(135deg, rgba(168,85,247,0.14), rgba(59,130,246,0.14));
+        opacity: 0;
+        transition: opacity 0.28s;
+      }
+      .promo-btn:hover::before { opacity: 1; }
+      .promo-btn:hover {
+        transform: translateY(-4px) scale(1.05);
+        border-color: var(--neon-purple);
+        box-shadow: var(--glow-purple);
       }
 
-      .move-history-container::-webkit-scrollbar-track {
-        background: rgba(39, 39, 42, 0.3);
-        border-radius: 3px;
+      .promo-btn span.label {
+        font-size: 0.58rem;
+        font-family: var(--font-hud);
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 1px;
       }
 
-      .move-history-container::-webkit-scrollbar-thumb {
-        background: rgba(113, 113, 122, 0.5);
-        border-radius: 3px;
+      /* ============================================================
+         TIMER CLASSES (used by JS to switch classes dynamically)
+      ============================================================ */
+      .timer-normal  { color: var(--neon-cyan);  text-shadow: 0 0 12px rgba(6,182,212,0.65); }
+      .timer-danger  { color: var(--neon-red);   text-shadow: 0 0 12px rgba(239,68,68,0.8); animation: dangerPulse 0.8s ease-in-out infinite; }
+      .timer-inactive{ color: var(--text-muted); }
+
+      /* ============================================================
+         NOTIFICATION PILL
+      ============================================================ */
+      #notifPill {
+        position: fixed;
+        top: 20px; left: 50%;
+        transform: translateX(-50%) translateY(-110px);
+        background: rgba(10, 10, 22, 0.96);
+        border: 1px solid var(--neon-cyan);
+        border-radius: 99px;
+        padding: 10px 24px;
+        font-family: var(--font-hud);
+        font-size: 11px;
+        letter-spacing: 1px;
+        color: var(--neon-cyan);
+        box-shadow: var(--glow-cyan);
+        z-index: 10000;
+        transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        white-space: nowrap;
+      }
+      #notifPill.show { transform: translateX(-50%) translateY(0); }
+
+      /* ============================================================
+         RESPONSIVE
+      ============================================================ */
+      @media (max-width: 800px) {
+        .game-card { flex-direction: column; align-items: center; padding: 14px; }
+        .move-history-panel { width: 100%; min-height: 180px; }
+        .chessboard { width: 360px; height: 360px; }
       }
 
-      .move-history-container::-webkit-scrollbar-thumb:hover {
-        background: rgba(113, 113, 122, 0.7);
+      @media (min-width: 801px) {
+        .game-card { flex-direction: row; }
+      }
+
+      @media (max-width: 520px) {
+        #app-wrapper { padding: 10px 8px; }
+        .game-card { padding: 10px; gap: 10px; }
+        .chessboard { width: 300px; height: 300px; }
+        .piece { max-width: 32px; max-height: 32px; }
+        .timer-pill { font-size: 18px; min-width: 58px; padding: 5px 10px; }
+        .cyber-btn { font-size: 8.5px; padding: 8px 6px; }
+      }
+
+      @media (max-width: 380px) {
+        .chessboard { width: 270px; height: 270px; }
+        .piece { max-width: 28px; max-height: 28px; }
       }
     </style>
   </head>
-  <body class="bg-zinc-950 font-sans text-zinc-100 overflow-x-hidden" style="background-image: url('https://images.unsplash.com/photo-1529699211952-734e80c4d42b?w=1920&q=80'); background-size: cover; background-position: center; background-attachment: fixed;">
-    <div
-      class="min-h-screen w-full flex items-center justify-center p-4 select-none"
-    >
-      <!-- Chessboard and Inline Panels Container -->
-      <div
-        class="flex gap-4 bg-zinc-900/40 p-6 rounded-2xl shadow-2xl border border-zinc-800/80 backdrop-blur-md"
-      >
-        <!-- Left Side: Chessboard -->
-        <div class="flex flex-col items-center gap-3">
-          <!-- Top Opponent Panel -->
-          <div
-            id="topPlayerPanel"
-            class="w-[400px] flex items-center justify-between px-3 py-2 bg-zinc-950/60 rounded-xl border border-zinc-800/40 transition-all duration-300"
-          >
-            <div class="flex items-center gap-2">
-              <span
-                id="topPlayerIndicator"
-                class="w-2.5 h-2.5 rounded-full bg-zinc-400"
-              ></span>
-              <span class="font-medium text-zinc-300 text-sm" id="topPlayerName"
-                >Black</span
-              >
+
+  <body>
+    <div id="app-wrapper">
+
+      <div class="game-card">
+        <div class="corner tl"></div>
+        <div class="corner tr"></div>
+        <div class="corner bl"></div>
+        <div class="corner br"></div>
+
+        <!-- ===== BOARD COLUMN ===== -->
+        <div class="board-column">
+
+          <!-- Top Player Strip (opponent) -->
+          <div class="player-strip" id="topStripPanel">
+            <div class="strip-left">
+              <div class="strip-avatar" id="topStripAvatar">♚</div>
+              <div class="strip-info">
+                <div class="strip-name" id="topStripName">Black</div>
+                <div class="strip-indicator-row">
+                  <span id="topPlayerIndicator" class="turn-dot-inactive"></span>
+                  <div class="strip-captures" id="topCaptured"></div>
+                </div>
+              </div>
             </div>
-            <!-- Timer -->
-            <span id="blackTimer" class="timer-normal text-lg">30</span>
-            <!-- Captured pieces shown inline here -->
-            <div
-              id="topCaptured"
-              class="flex items-center gap-0.5 text-xl tracking-tighter"
-            ></div>
+            <div class="strip-right">
+              <span id="blackTimer" class="timer-pill timer-inactive">30</span>
+            </div>
           </div>
 
-          <!-- The Board -->
-          <div
-            class="chessboard-wrapper overflow-hidden rounded-xl border border-zinc-800/80 shadow-2xl bg-zinc-900"
-          >
-            <div class="chessboard"></div>
+          <!-- Chessboard -->
+          <div class="chessboard-outer">
+            <div class="chessboard-wrapper">
+              <div class="chessboard"></div>
+            </div>
           </div>
 
-          <!-- Bottom Self Panel -->
-          <div
-            id="bottomPlayerPanel"
-            class="w-[400px] flex items-center justify-between px-3 py-2 bg-zinc-950/60 rounded-xl border border-zinc-800/40 transition-all duration-300"
-          >
-            <div class="flex items-center gap-2">
-              <span
-                id="bottomPlayerIndicator"
-                class="w-2.5 h-2.5 rounded-full bg-white shadow-sm"
-              ></span>
-              <span
-                class="font-medium text-zinc-100 text-sm"
-                id="bottomPlayerName"
-                >White</span
-              >
+          <!-- Bottom Player Strip (you) -->
+          <div class="player-strip" id="bottomStripPanel">
+            <div class="strip-left">
+              <div class="strip-avatar" id="bottomStripAvatar" style="background:linear-gradient(135deg,#e8deff,#a78bfa);">♔</div>
+              <div class="strip-info">
+                <div class="strip-name" id="bottomStripName">White</div>
+                <div class="strip-indicator-row">
+                  <span id="bottomPlayerIndicator" class="turn-dot-active"></span>
+                  <div class="strip-captures" id="bottomCaptured"></div>
+                </div>
+              </div>
             </div>
-            <!-- Timer -->
-            <span id="whiteTimer" class="timer-normal text-lg">30</span>
-            <!-- Captured pieces shown inline here -->
-            <div
-              id="bottomCaptured"
-              class="flex items-center gap-0.5 text-xl tracking-tighter"
-            ></div>
+            <div class="strip-right">
+              <span id="whiteTimer" class="timer-pill timer-normal">30</span>
+            </div>
           </div>
 
           <!-- Action Buttons -->
-          <div class="w-[400px] flex gap-3 mt-1.5">
-            <button
-              id="resignBtn"
-              class="flex-1 py-2 px-4 text-black rounded-xl bg-red-950/30 border border-red-900/30 hover:bg-red-900/50 hover:scale-105 active:bg-red-900/60 active:scale-95 text-red-300 hover:text-red-200 text-xs font-bold tracking-wider uppercase transition-all duration-300 shadow-md cursor-pointer"
-            >
-              🏳️ Resign
-            </button>
-            <button
-              id="offerDrawBtn"
-              class="flex-1 py-2 px-4 text-black rounded-xl bg-zinc-950/40 border border-zinc-800/40 hover:bg-zinc-800/60 hover:scale-105 active:bg-zinc-800/70 active:scale-95 text-zinc-300 hover:text-zinc-100 text-xs font-bold tracking-wider uppercase transition-all duration-300 shadow-md cursor-pointer"
-            >
-              🤝 Offer Draw
-            </button>
+          <div class="action-row">
+            <button id="resignBtn"    class="cyber-btn btn-resign">🏳 Resign</button>
+            <button id="offerDrawBtn" class="cyber-btn btn-draw">🤝 Draw</button>
+            <button id="replayBtn"    class="cyber-btn btn-replay hidden">🔄 Replay</button>
           </div>
-        </div>
 
-        <!-- Right Side: Move History Sidebar -->
-        <div class="flex flex-col gap-3">
-          <h3 class="text-sm font-semibold text-zinc-400 uppercase tracking-wider">Move History</h3>
-          <div id="moveHistory" class="move-history-container">
-            <span class="text-xs text-zinc-500 italic">No moves yet</span>
+        </div><!-- /.board-column -->
+
+        <!-- ===== MOVE HISTORY PANEL ===== -->
+        <div class="move-history-panel">
+          <div class="panel-header">
+            <span style="font-size:13px;opacity:0.7;">♟</span>
+            <span class="panel-title">Move Log</span>
+            <span class="move-count-badge" id="moveCountBadge">0</span>
           </div>
+
+          <div id="moveHistory" class="move-history-container">
+            <div class="no-moves-msg">▸ NO MOVES YET</div>
+          </div>
+
+          <div class="panel-status">
+            <span id="gameTurnStatus">WHITE'S TURN</span>
+          </div>
+        </div><!-- /.move-history-panel -->
+
+      </div><!-- /.game-card -->
+
+    </div><!-- /#app-wrapper -->
+
+    <!-- Notification pill -->
+    <div id="notifPill"></div>
+
+    <!-- ===== GAME END POPUP ===== -->
+    <div id="gamePopup" class="game-popup hidden">
+      <div class="popup-box">
+        <div class="popup-trophy" id="popupTrophy">🏆</div>
+        <h1 id="popupTitle">Game Over</h1>
+        <p id="popupMessage"></p>
+        <div class="popup-buttons">
+          <button class="popup-btn btn-close-popup" onclick="closePopup(false)">✕ Close</button>
+          <button class="popup-btn btn-play-again" onclick="closePopup(true)">⟳ Play Again</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== PAWN PROMOTION DIALOG ===== -->
+    <div id="promotionDialog" class="game-popup hidden">
+      <div class="popup-box" style="width:min(390px,94vw)">
+        <h1 id="promoTitle" style="font-size:20px;margin-bottom:8px;font-family:var(--font-hud);letter-spacing:3px;color:var(--neon-purple);">PROMOTE PAWN</h1>
+        <p style="font-size:12px;color:var(--text-secondary);font-family:'Rajdhani',sans-serif;margin-bottom:20px;">Choose your piece:</p>
+        <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;">
+          <button class="promo-btn" id="promoQueen"  data-piece="q"><img src="" alt="Queen" style="width:40px;height:40px;"><span class="label">Queen</span></button>
+          <button class="promo-btn" id="promoRook"   data-piece="r"><img src="" alt="Rook" style="width:40px;height:40px;"><span class="label">Rook</span></button>
+          <button class="promo-btn" id="promoBishop" data-piece="b"><img src="" alt="Bishop" style="width:40px;height:40px;"><span class="label">Bishop</span></button>
+          <button class="promo-btn" id="promoKnight" data-piece="n"><img src="" alt="Knight" style="width:40px;height:40px;"><span class="label">Knight</span></button>
         </div>
       </div>
     </div>
 
     <!-- SCRIPTS -->
     <script src="/socket.io/socket.io.js"></script>
-    <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"
       integrity="sha512-xRllwz2gdZciIB+AkEbeq+gVhX8VB8XsfqeFbUh+SzHlN96dEduwtTuVuc2u9EROlmW9+yhRlxjif66ORpsgVA=="
-      crossorigin="anonymous"
-      referrerpolicy="no-referrer"
-    ></script>
+      crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script src="/js/chessgame.js"></script>
 
-    <!-- GAME END POPUP -->
-    <div id="gamePopup" class="game-popup hidden">
-      <div class="popup-box">
-        <h1 id="popupTitle">Game Over</h1>
-        <p id="popupMessage"></p>
-        <button onclick="closePopup()">Close</button>
-      </div>
-    </div>
-
-    <!-- PAWN PROMOTION DIALOG -->
-    <div id="promotionDialog" class="game-popup hidden">
-      <div class="popup-box" style="width:380px">
-        <h1 style="margin-bottom:6px">Pawn Promotion</h1>
-        <p style="font-size:14px;margin-bottom:18px">Choose a piece to promote to:</p>
-        <div style="display:flex;justify-content:center;gap:12px">
-          <button class="promo-btn" id="promoQueen" data-piece="q">
-            ♛<span class="label">Queen</span>
-          </button>
-          <button class="promo-btn" id="promoRook" data-piece="r">
-            ♜<span class="label">Rook</span>
-          </button>
-          <button class="promo-btn" id="promoBishop" data-piece="b">
-            ♝<span class="label">Bishop</span>
-          </button>
-          <button class="promo-btn" id="promoKnight" data-piece="n">
-            ♞<span class="label">Knight</span>
-          </button>
-        </div>
-      </div>
-    </div>
+    <script>
+      function showNotif(msg, duration = 3000) {
+        const pill = document.getElementById('notifPill');
+        pill.textContent = msg;
+        pill.classList.add('show');
+        setTimeout(() => pill.classList.remove('show'), duration);
+      }
+    </script>
   </body>
 </html>

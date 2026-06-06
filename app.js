@@ -42,14 +42,6 @@
                   clearInterval(timerInterval);
                   timerInterval = null;
                   io.emit("gameOver", { winner: 'b', reason: 'timeout' });
-                  
-                  setTimeout(() => {
-                      chess.reset();
-                      resetGame();
-                      io.emit("boardState", chess.fen());
-                      io.emit("timerUpdate", { whiteTime, blackTime });
-                      io.emit("moveHistory", moveHistory);
-                  }, 5000);
                   return;
               }
           } else {
@@ -60,14 +52,6 @@
                   clearInterval(timerInterval);
                   timerInterval = null;
                   io.emit("gameOver", { winner: 'w', reason: 'timeout' });
-                  
-                  setTimeout(() => {
-                      chess.reset();
-                      resetGame();
-                      io.emit("boardState", chess.fen());
-                      io.emit("timerUpdate", { whiteTime, blackTime });
-                      io.emit("moveHistory", moveHistory);
-                  }, 5000);
                   return;
               }
           }
@@ -172,7 +156,7 @@ io.on("connection", function(uniquesocket){
             const result = chess.move(move);
             if(result){
                 // Track move history
-                const moveNotation = formatMove(move, piece);
+                const moveNotation = result.san;
                 moveHistory.push(moveNotation);
                 
                 currentPlayer = chess.turn();
@@ -183,14 +167,14 @@ io.on("connection", function(uniquesocket){
                 if (chess.isGameOver()) {
                     let reason = "draw";
                     let winner = null;
-                    if (chess.in_checkmate()) {
+                    if (chess.isCheckmate()) {
                         reason = "checkmate";
                         winner = chess.turn() === "w" ? "b" : "w";
-                    } else if (chess.in_stalemate()) {
+                    } else if (chess.isStalemate()) {
                         reason = "stalemate";
-                    } else if (chess.in_threefold_repetition()) {
+                    } else if (chess.isThreefoldRepetition()) {
                         reason = "threefold repetition";
-                    } else if (chess.insufficient_material()) {
+                    } else if (chess.isInsufficientMaterial()) {
                         reason = "insufficient material";
                     }
                     
@@ -201,14 +185,6 @@ io.on("connection", function(uniquesocket){
                     gameActive = false;
                     
                     io.emit("gameOver", { winner, reason });
-                    
-                    setTimeout(() => {
-                        chess.reset();
-                        resetGame();
-                        io.emit("boardState", chess.fen());
-                        io.emit("timerUpdate", { whiteTime, blackTime });
-                        io.emit("moveHistory", moveHistory);
-                    }, 5000);
                 } else {
                     // Reset the current player's time to 30 seconds after move
                     if (chess.turn() === 'w') {
@@ -244,14 +220,6 @@ io.on("connection", function(uniquesocket){
                 timerInterval = null;
             }
             gameActive = false;
-
-            setTimeout(() => {
-                chess.reset();
-                resetGame();
-                io.emit("boardState", chess.fen());
-                io.emit("timerUpdate", { whiteTime, blackTime });
-                io.emit("moveHistory", moveHistory);
-            }, 5000);
         }
     });
 
@@ -276,14 +244,6 @@ io.on("connection", function(uniquesocket){
                 timerInterval = null;
             }
             gameActive = false;
-
-            setTimeout(() => {
-                chess.reset();
-                resetGame();
-                io.emit("boardState", chess.fen());
-                io.emit("timerUpdate", { whiteTime, blackTime });
-                io.emit("moveHistory", moveHistory);
-            }, 5000);
         } else {
             let offererId = null;
             if (uniquesocket.id === players.white) {
@@ -294,6 +254,16 @@ io.on("connection", function(uniquesocket){
             if (offererId) {
                 io.to(offererId).emit("drawDeclined");
             }
+        }
+    });
+
+    uniquesocket.on("restartGame", () => {
+        if (!gameActive) {
+            chess.reset();
+            resetGame();
+            io.emit("boardState", chess.fen());
+            io.emit("timerUpdate", { whiteTime, blackTime });
+            io.emit("moveHistory", moveHistory);
         }
     });
 });
