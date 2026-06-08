@@ -9,80 +9,97 @@
  const server = http.createServer(app);
  const io = socket(server);
 
- const chess = new Chess();
- let players = {};
- let currentPlayer = "W";
+ // Room management
+ const rooms = {};
 
  // Timer settings
  const INITIAL_TIME = 30; // 30 seconds per player
- let whiteTime = INITIAL_TIME;
- let blackTime = INITIAL_TIME;
- let timerInterval = null;
- let gameActive = true;
 
- // Move history
- let moveHistory = [];
+ function generateRoomId() {
+     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+     let roomId = '';
+     for (let i = 0; i < 6; i++) {
+         roomId += chars.charAt(Math.floor(Math.random() * chars.length));
+     }
+     return roomId;
+ }
+
+ function createRoom(roomId) {
+     rooms[roomId] = {
+         chess: new Chess(),
+         players: { white: null, black: null },
+         playerNames: { white: 'White', black: 'Black' },
+         whiteTime: INITIAL_TIME,
+         blackTime: INITIAL_TIME,
+         timerInterval: null,
+         gameActive: true,
+         moveHistory: []
+     };
+     return rooms[roomId];
+ }
+
+ function getRoom(roomId) {
+     if (!rooms[roomId]) {
+         return createRoom(roomId);
+     }
+     return rooms[roomId];
+ }
 
   // Timer functions
-  function startTimer() {
-      if (timerInterval) clearInterval(timerInterval);
-      timerInterval = setInterval(() => {
-          if (!gameActive) {
-              clearInterval(timerInterval);
+  function startTimer(roomId) {
+      const room = rooms[roomId];
+      if (!room) return;
+      
+      if (room.timerInterval) clearInterval(room.timerInterval);
+      room.timerInterval = setInterval(() => {
+          if (!room.gameActive) {
+              clearInterval(room.timerInterval);
               return;
           }
 
-          const currentTurn = chess.turn();
+          const currentTurn = room.chess.turn();
 
           if (currentTurn === 'w') {
-              whiteTime--;
-              if (whiteTime <= 0) {
-                  whiteTime = 0;
-                  gameActive = false;
-                  clearInterval(timerInterval);
-                  timerInterval = null;
-                  io.emit("gameOver", { winner: 'b', reason: 'timeout' });
-                  
-                  // Automatically reset the game state after timeout
-                  resetGame();
-                  io.emit("boardState", chess.fen());
-                  io.emit("timerUpdate", { whiteTime, blackTime });
-                  io.emit("moveHistory", moveHistory);
+              room.whiteTime--;
+              if (room.whiteTime <= 0) {
+                  room.whiteTime = 0;
+                  room.gameActive = false;
+                  clearInterval(room.timerInterval);
+                  room.timerInterval = null;
+                  room.closed = true;
+                  io.to(roomId).emit("gameOver", { winner: 'b', reason: 'timeout' });
                   return;
               }
           } else {
-              blackTime--;
-              if (blackTime <= 0) {
-                  blackTime = 0;
-                  gameActive = false;
-                  clearInterval(timerInterval);
-                  timerInterval = null;
-                  io.emit("gameOver", { winner: 'w', reason: 'timeout' });
-                  
-                  // Automatically reset the game state after timeout
-                  resetGame();
-                  io.emit("boardState", chess.fen());
-                  io.emit("timerUpdate", { whiteTime, blackTime });
-                  io.emit("moveHistory", moveHistory);
+              room.blackTime--;
+              if (room.blackTime <= 0) {
+                  room.blackTime = 0;
+                  room.gameActive = false;
+                  clearInterval(room.timerInterval);
+                  room.timerInterval = null;
+                  room.closed = true;
+                  io.to(roomId).emit("gameOver", { winner: 'w', reason: 'timeout' });
                   return;
               }
           }
 
-          io.emit("timerUpdate", { whiteTime, blackTime });
+          io.to(roomId).emit("timerUpdate", { whiteTime: room.whiteTime, blackTime: room.blackTime });
       }, 1000);
   }
 
-  function resetGame() {
-      chess.reset();
-      whiteTime = INITIAL_TIME;
-      blackTime = INITIAL_TIME;
-      moveHistory = [];
-      gameActive = true;
-      currentPlayer = "W";
-      if (timerInterval) clearInterval(timerInterval);
-      timerInterval = null;
-      if (players.white && players.black) {
-          startTimer();
+  function resetGame(roomId) {
+      const room = rooms[roomId];
+      if (!room) return;
+      
+      room.chess.reset();
+      room.whiteTime = INITIAL_TIME;
+      room.blackTime = INITIAL_TIME;
+      room.moveHistory = [];
+      room.gameActive = true;
+      if (room.timerInterval) clearInterval(room.timerInterval);
+      room.timerInterval = null;
+      if (room.players.white && room.players.black) {
+          startTimer(roomId);
       }
   }
 
@@ -117,103 +134,133 @@
  app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/", (req,res) => {
-    res.render("index", {title: "Chess Game"});
+    res.render("landing", {title: "Chess - Create Room"});
+});
+
+app.get("/room/:roomId", (req,res) => {
+    const roomId = req.params.roomId;
+    // Ensure room exists
+    getRoom(roomId);
+    res.render("index", {title: "Chess Game", roomId: roomId});
+});
+
+app.get("/api/create-room", (req,res) => {
+    const roomId = generateRoomId();
+    createRoom(roomId);
+    res.json({ roomId: roomId });
 });
 
 io.on("connection", function(uniquesocket){
     console.log("connected");
+    let currentRoomId = null;
 
-    if(!players.white){
-        players.white = uniquesocket.id;
-        uniquesocket.emit("playerRole", "w");
-        console.log("White player joined:", uniquesocket.id);
-    } else if (!players.black)  {
-        players.black = uniquesocket.id;
-        uniquesocket.emit("playerRole", "b");
-        console.log("Black player joined:", uniquesocket.id);
-        // Start timer when both players have joined
-        if (!timerInterval && gameActive) {
-            console.log("Both players joined, starting timer");
-            startTimer();
+    uniquesocket.on("joinRoom", function(data){
+        const roomId = data.roomId;
+        const playerName = data.name || 'Anonymous';
+        currentRoomId = roomId;
+        const room = getRoom(roomId);
+
+        // Join socket.io room
+        uniquesocket.join(roomId);
+        console.log(`Socket ${uniquesocket.id} joined room ${roomId} as ${playerName}`);
+
+        if(!room.players.white){
+            room.players.white = uniquesocket.id;
+            room.playerNames.white = playerName;
+            uniquesocket.emit("playerRole", "w");
+            console.log("White player joined:", uniquesocket.id, "as", playerName, "in room", roomId);
+        } else if (!room.players.black)  {
+            room.players.black = uniquesocket.id;
+            room.playerNames.black = playerName;
+            uniquesocket.emit("playerRole", "b");
+            console.log("Black player joined:", uniquesocket.id, "as", playerName, "in room", roomId);
+            // Start timer when both players have joined
+            if (!room.timerInterval && room.gameActive) {
+                console.log("Both players joined, starting timer in room", roomId);
+                startTimer(roomId);
+            }
+        } else {
+            uniquesocket.emit("spectatorRole");
+            console.log("Spectator joined:", uniquesocket.id, "as", playerName, "in room", roomId);
         }
-    } else {
-        uniquesocket.emit("spectatorRole");
-        console.log("Spectator joined:", uniquesocket.id);
-    } 
+
+        // Send the current game board state to the connecting socket
+        uniquesocket.emit("boardState", room.chess.fen());
+        uniquesocket.emit("timerUpdate", { whiteTime: room.whiteTime, blackTime: room.blackTime });
+        uniquesocket.emit("moveHistory", room.moveHistory);
+        io.to(roomId).emit("playerNames", room.playerNames);
+    });
     
-    // Send the current game board state to the connecting socket
-    uniquesocket.emit("boardState", chess.fen());
-    uniquesocket.emit("timerUpdate", { whiteTime, blackTime });
-    uniquesocket.emit("moveHistory", moveHistory);
     uniquesocket.on("disconnect", function(){
-        if(uniquesocket.id === players.white){
-            delete players.white;
-        } else if(uniquesocket.id === players.black){
-            delete players.black;
-        }
-        if (!players.white || !players.black) {
-            if (timerInterval) {
-                clearInterval(timerInterval);
-                timerInterval = null;
+        if (currentRoomId && rooms[currentRoomId]) {
+            const room = rooms[currentRoomId];
+            if(uniquesocket.id === room.players.white){
+                delete room.players.white;
+            } else if(uniquesocket.id === room.players.black){
+                delete room.players.black;
+            }
+            if (!room.players.white || !room.players.black) {
+                if (room.timerInterval) {
+                    clearInterval(room.timerInterval);
+                    room.timerInterval = null;
+                }
             }
         }
     });
     uniquesocket.on("move", (move)=>{
+        if (!currentRoomId || !rooms[currentRoomId]) return;
+        const room = rooms[currentRoomId];
+        
         try{
-            if (!gameActive) return;
-            if (chess.turn() === "w" &&  uniquesocket.id !== players.white) return;
-            if (chess.turn() === "b" &&  uniquesocket.id !== players.black) return;
+            if (!room.gameActive) return;
+            if (room.chess.turn() === "w" &&  uniquesocket.id !== room.players.white) return;
+            if (room.chess.turn() === "b" &&  uniquesocket.id !== room.players.black) return;
 
             // Get piece before move for notation
-            const piece = chess.get(move.from);
+            const piece = room.chess.get(move.from);
             
-            const result = chess.move(move);
+            const result = room.chess.move(move);
             if(result){
                 // Track move history
                 const moveNotation = result.san;
-                moveHistory.push(moveNotation);
+                room.moveHistory.push(moveNotation);
                 
-                currentPlayer = chess.turn();
-                io.emit("move", move);
-                io.emit("boardState", chess.fen());
-                io.emit("moveHistory", moveHistory);
+                io.to(currentRoomId).emit("move", move);
+                io.to(currentRoomId).emit("boardState", room.chess.fen());
+                io.to(currentRoomId).emit("moveHistory", room.moveHistory);
                 
-                if (chess.isGameOver()) {
+                if (room.chess.isGameOver()) {
                     let reason = "draw";
                     let winner = null;
-                    if (chess.isCheckmate()) {
+                    if (room.chess.isCheckmate()) {
                         reason = "checkmate";
-                        winner = chess.turn() === "w" ? "b" : "w";
-                    } else if (chess.isStalemate()) {
+                        winner = room.chess.turn() === "w" ? "b" : "w";
+                    } else if (room.chess.isStalemate()) {
                         reason = "stalemate";
-                    } else if (chess.isThreefoldRepetition()) {
+                    } else if (room.chess.isThreefoldRepetition()) {
                         reason = "threefold repetition";
-                    } else if (chess.isInsufficientMaterial()) {
+                    } else if (room.chess.isInsufficientMaterial()) {
                         reason = "insufficient material";
                     }
                     
-                    if (timerInterval) {
-                        clearInterval(timerInterval);
-                        timerInterval = null;
+                    if (room.timerInterval) {
+                        clearInterval(room.timerInterval);
+                        room.timerInterval = null;
                     }
-                    gameActive = false;
+                    room.gameActive = false;
+                    room.closed = true;
                     
-                    io.emit("gameOver", { winner, reason });
-                    
-                    // Automatically reset the game state after game ends
-                    // This ensures new players joining get a fresh game
-                    resetGame();
-                    io.emit("boardState", chess.fen());
-                    io.emit("timerUpdate", { whiteTime, blackTime });
-                    io.emit("moveHistory", moveHistory);
+                    io.to(currentRoomId).emit("gameOver", { winner, reason });
                 } else {
-                    // Timer continues running for the new active player
-                    // No time reset - just continue counting down
-                    io.emit("timerUpdate", { whiteTime, blackTime });
+                    // Per-move time control: reset the clock after every completed move
+                    // so each player gets a fresh INITIAL_TIME for their turn.
+                    room.whiteTime = INITIAL_TIME;
+                    room.blackTime = INITIAL_TIME;
+                    io.to(currentRoomId).emit("timerUpdate", { whiteTime: room.whiteTime, blackTime: room.blackTime });
                     
-                    // Start timer if not already running
-                    if (!timerInterval && gameActive) {
-                        startTimer();
+                    // Restart the countdown for the new active player
+                    if (room.players.white && room.players.black && room.gameActive) {
+                        startTimer(currentRoomId);
                     }
                 }
             } else{
@@ -227,32 +274,33 @@ io.on("connection", function(uniquesocket){
     });
 
     uniquesocket.on("resign", () => {
-        if (!gameActive) return;
-        if (uniquesocket.id === players.white || uniquesocket.id === players.black) {
-            const resigner = uniquesocket.id === players.white ? 'w' : 'b';
+        if (!currentRoomId || !rooms[currentRoomId]) return;
+        const room = rooms[currentRoomId];
+        
+        if (!room.gameActive) return;
+        if (uniquesocket.id === room.players.white || uniquesocket.id === room.players.black) {
+            const resigner = uniquesocket.id === room.players.white ? 'w' : 'b';
             
-            if (timerInterval) {
-                clearInterval(timerInterval);
-                timerInterval = null;
+            if (room.timerInterval) {
+                clearInterval(room.timerInterval);
+                room.timerInterval = null;
             }
-            gameActive = false;
+            room.gameActive = false;
+            room.closed = true;
             
-            io.emit("resigned", { resigner });
-            
-            // Automatically reset the game state after resignation
-            resetGame();
-            io.emit("boardState", chess.fen());
-            io.emit("timerUpdate", { whiteTime, blackTime });
-            io.emit("moveHistory", moveHistory);
+            io.to(currentRoomId).emit("resigned", { resigner });
         }
     });
 
     uniquesocket.on("offerDraw", () => {
+        if (!currentRoomId || !rooms[currentRoomId]) return;
+        const room = rooms[currentRoomId];
+        
         let receiverId = null;
-        if (uniquesocket.id === players.white) {
-            receiverId = players.black;
-        } else if (uniquesocket.id === players.black) {
-            receiverId = players.white;
+        if (uniquesocket.id === room.players.white) {
+            receiverId = room.players.black;
+        } else if (uniquesocket.id === room.players.black) {
+            receiverId = room.players.white;
         }
         if (receiverId) {
             io.to(receiverId).emit("drawOffered");
@@ -260,27 +308,25 @@ io.on("connection", function(uniquesocket){
     });
 
     uniquesocket.on("drawResponse", (data) => {
-        if (!gameActive) return;
+        if (!currentRoomId || !rooms[currentRoomId]) return;
+        const room = rooms[currentRoomId];
+        
+        if (!room.gameActive) return;
         if (data.accepted) {
-            if (timerInterval) {
-                clearInterval(timerInterval);
-                timerInterval = null;
+            if (room.timerInterval) {
+                clearInterval(room.timerInterval);
+                room.timerInterval = null;
             }
-            gameActive = false;
+            room.gameActive = false;
+            room.closed = true;
             
-            io.emit("drawDeclared", { reason: 'agreement' });
-            
-            // Automatically reset the game state after draw
-            resetGame();
-            io.emit("boardState", chess.fen());
-            io.emit("timerUpdate", { whiteTime, blackTime });
-            io.emit("moveHistory", moveHistory);
+            io.to(currentRoomId).emit("drawDeclared", { reason: 'agreement' });
         } else {
             let offererId = null;
-            if (uniquesocket.id === players.white) {
-                offererId = players.black;
-            } else if (uniquesocket.id === players.black) {
-                offererId = players.white;
+            if (uniquesocket.id === room.players.white) {
+                offererId = room.players.black;
+            } else if (uniquesocket.id === room.players.black) {
+                offererId = room.players.white;
             }
             if (offererId) {
                 io.to(offererId).emit("drawDeclined");
@@ -288,15 +334,27 @@ io.on("connection", function(uniquesocket){
         }
     });
 
-    uniquesocket.on("restartGame", () => {
-        // Allow restart regardless of game state
-        // This ensures both players can trigger a fresh game
-        chess.reset();
-        resetGame();
-        io.emit("boardState", chess.fen());
-        io.emit("timerUpdate", { whiteTime, blackTime });
-        io.emit("moveHistory", moveHistory);
+    uniquesocket.on("chatMessage", (data) => {
+        if (!currentRoomId || !rooms[currentRoomId]) return;
+        const room = rooms[currentRoomId];
+        
+        // Get sender name from room data
+        let senderName = "Anonymous";
+        if (uniquesocket.id === room.players.white) {
+            senderName = room.playerNames.white;
+        } else if (uniquesocket.id === room.players.black) {
+            senderName = room.playerNames.black;
+        } else if (data.name) {
+            // Spectators send their name with the message
+            senderName = data.name;
+        }
+        
+        io.to(currentRoomId).emit("chatMessage", {
+            sender: senderName,
+            message: data.message
+        });
     });
+
 });
 
 const PORT = process.env.PORT || 3001;

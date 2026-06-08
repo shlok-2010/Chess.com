@@ -1,10 +1,24 @@
 console.log("=== Chess Game Script Loading ===");
+
+// Get room ID from URL
+const pathParts = window.location.pathname.split('/');
+const roomId = pathParts[pathParts.length - 1] || 'default';
+
+// Get player name from URL parameter
+const urlParams = new URLSearchParams(window.location.search);
+const playerName = urlParams.get('name') || 'Anonymous';
+
 const socket = io(window.location.origin);
 const chess = new Chess();
 const boardElement = document.querySelector(".chessboard");
 console.log("Socket initialized:", socket);
 console.log("Chess initialized:", chess);
 console.log("Board element:", boardElement);
+console.log("Room ID:", roomId);
+console.log("Player name:", playerName);
+
+// Join the room with name
+socket.emit('joinRoom', { roomId, name: playerName });
 
 let draggedPiece = null;
 let sourceSquare = null;
@@ -195,12 +209,13 @@ const updateCapturedPieces = () => {
 
     const currentTurn = chess.turn();
     let topColor, bottomColor;
+    const names = window.playerNames || { white: 'White', black: 'Black' };
 
     if (playerRole === "b") {
         // Board is flipped: top = white, bottom = black
         topColor = "w"; bottomColor = "b";
-        if (topStripNameEl)    topStripNameEl.innerText    = "White";
-        if (bottomStripNameEl) bottomStripNameEl.innerText = "Black (You)";
+        if (topStripNameEl)    topStripNameEl.innerText    = names.white;
+        if (bottomStripNameEl) bottomStripNameEl.innerText = names.black + (playerRole === "b" ? " (You)" : "");
         if (topAvatar)    topAvatar.innerText    = "♔";
         if (bottomAvatar) bottomAvatar.innerText = "♚";
         if (bottomAvatar) bottomAvatar.style.background = "linear-gradient(135deg,var(--neon-purple),var(--neon-blue))";
@@ -210,8 +225,8 @@ const updateCapturedPieces = () => {
     } else {
         // Normal: top = black, bottom = white
         topColor = "b"; bottomColor = "w";
-        if (topStripNameEl)    topStripNameEl.innerText    = "Black";
-        if (bottomStripNameEl) bottomStripNameEl.innerText = playerRole === "w" ? "White (You)" : "White";
+        if (topStripNameEl)    topStripNameEl.innerText    = names.black;
+        if (bottomStripNameEl) bottomStripNameEl.innerText = names.white + (playerRole === "w" ? " (You)" : "");
         if (topAvatar)    topAvatar.innerText    = "♚";
         if (bottomAvatar) bottomAvatar.innerText = "♔";
         if (bottomAvatar) bottomAvatar.style.background = "linear-gradient(135deg,#e8deff,#a78bfa)";
@@ -531,13 +546,29 @@ function showGamePopup(title, message, isCheckmate = false) {
     document.getElementById("gamePopup").classList.remove("hidden");
 }
 
-function closePopup(emitRestart = false) {
+function closePopup() {
     document.getElementById("gamePopup").classList.add("hidden");
-    // Always emit restartGame when closing popup after game over
-    // This ensures both players get a fresh game
-    if (emitRestart || chess.game_over()) {
-        socket.emit("restartGame");
+}
+
+// Create a brand-new room and redirect both this player there.
+// The current room is closed once a game ends, so a new room is required to play again.
+async function createNewRoom() {
+    try {
+        const response = await fetch('/api/create-room');
+        const data = await response.json();
+        if (data.roomId) {
+            window.location.href = `/room/${data.roomId}`;
+        } else {
+            showNotif('❌ Failed to create a new room');
+        }
+    } catch (err) {
+        console.error('Error creating room:', err);
+        showNotif('❌ Failed to create a new room');
     }
+}
+
+function goHome() {
+    window.location.href = '/';
 }
 
 /* ============================================================
@@ -562,6 +593,12 @@ socket.on("spectatorRole", function () {
     playerRole = null;
     renderBoard();
     updateTimerDisplay();
+});
+
+socket.on("playerNames", function (names) {
+    // Store names locally for display
+    window.playerNames = names;
+    updateCapturedPieces(); // This will update the player name display
 });
 
 socket.on("boardState", function (fen) {
@@ -610,12 +647,20 @@ socket.on("moveHistory", function (history) {
 socket.on("gameOver", function (data) {
     let title, message, isCheckmate = false;
 
+    const youText = (winner) => {
+        if (!playerRole) return null;
+        return winner === playerRole ? 'You win! 🎉' : 'You lost! 😢';
+    };
+
     if (data.reason === 'timeout') {
         const w = data.winner === 'w' ? 'White' : 'Black';
-        title = "TIME'S UP!"; message = `${w} wins on time!`;
+        const loser = data.winner === 'w' ? 'Black' : 'White';
+        title = "TIME'S UP!";
+        message = youText(data.winner) || `${loser} ran out of time. ${w} wins!`;
     } else if (data.reason === 'checkmate') {
         const w = data.winner === 'w' ? 'White' : 'Black';
-        title = "CHECKMATE!"; message = `${w} wins the game!`; isCheckmate = true;
+        title = "CHECKMATE!"; isCheckmate = true;
+        message = youText(data.winner) || `${w} wins the game!`;
     } else {
         const r = data.reason ? data.reason.toUpperCase() : "DRAW";
         title = "DRAW!"; message = `Game ended in a draw (${r})!`;
@@ -630,14 +675,16 @@ socket.on("gameOver", function (data) {
     if (oBtn)  oBtn.classList.add("hidden");
     if (rpBtn) rpBtn.classList.remove("hidden");
     
-    // Note: The server automatically resets the game after gameOver
-    // The popup close will trigger restartGame to sync both clients
+    // Game over: this room is now closed. Players must create a new room to play again.
 });
 
 socket.on("resigned", function (data) {
     const resignerText = data.resigner === 'w' ? 'White' : 'Black';
-    const winnerText   = data.resigner === 'w' ? 'Black' : 'White';
-    showGamePopup("RESIGNATION", `${resignerText} resigned. ${winnerText} wins!`);
+    const winner       = data.resigner === 'w' ? 'b' : 'w';
+    const winnerText   = winner === 'w' ? 'White' : 'Black';
+    let msg = `${resignerText} resigned. ${winnerText} wins!`;
+    if (playerRole) msg = (data.resigner === playerRole) ? 'You resigned. You lost! 😢' : `Opponent resigned. You win! 🎉`;
+    showGamePopup("RESIGNATION", msg);
     const rBtn = document.getElementById("resignBtn");
     const oBtn = document.getElementById("offerDrawBtn");
     const rpBtn = document.getElementById("replayBtn");
@@ -645,8 +692,7 @@ socket.on("resigned", function (data) {
     if (oBtn)  oBtn.classList.add("hidden");
     if (rpBtn) rpBtn.classList.remove("hidden");
     
-    // Note: The server automatically resets the game after resignation
-    // The popup close will trigger restartGame to sync both clients
+    // Resignation ends the game: this room is now closed. Create a new room to play again.
 });
 
 socket.on("drawOffered", function () {
@@ -670,8 +716,7 @@ socket.on("drawDeclared", function () {
     if (oBtn)  oBtn.classList.add("hidden");
     if (rpBtn) rpBtn.classList.remove("hidden");
     
-    // Note: The server automatically resets the game after draw
-    // The popup close will trigger restartGame to sync both clients
+    // Draw ends the game: this room is now closed. Create a new room to play again.
 });
 
 /* ============================================================
@@ -682,7 +727,7 @@ const offerDrawBtn = document.getElementById("offerDrawBtn");
 const replayBtn    = document.getElementById("replayBtn");
 
 if (replayBtn) {
-    replayBtn.addEventListener("click", () => socket.emit("restartGame"));
+    replayBtn.addEventListener("click", () => createNewRoom());
 }
 
 if (resignBtn) {
@@ -699,6 +744,54 @@ if (offerDrawBtn) {
         showNotif("🤝 Draw offer sent to opponent...");
     });
 }
+
+/* ============================================================
+   CHAT
+============================================================ */
+const chatInput = document.getElementById("chatInput");
+const sendChatBtn = document.getElementById("sendChatBtn");
+const chatMessagesContainer = document.getElementById("chatMessages");
+
+function addChatMessage(sender, message) {
+    // Remove "no messages" placeholder if it exists
+    const noChatMsg = chatMessagesContainer.querySelector(".no-chat-msg");
+    if (noChatMsg) noChatMsg.remove();
+
+    const msgEl = document.createElement("div");
+    msgEl.className = "chat-message";
+    msgEl.innerHTML = `
+        <div class="sender">${sender}</div>
+        <div class="content">${message}</div>
+    `;
+    chatMessagesContainer.appendChild(msgEl);
+    chatMessagesContainer.scrollTop = chatMessagesContainer.scrollHeight;
+}
+
+function sendChatMessage() {
+    const message = chatInput.value.trim();
+    if (!message) return;
+
+    // For spectators, include the name with the message
+    const data = playerRole ? { message } : { message, name: playerName };
+    socket.emit("chatMessage", data);
+    chatInput.value = "";
+}
+
+if (sendChatBtn) {
+    sendChatBtn.addEventListener("click", sendChatMessage);
+}
+
+if (chatInput) {
+    chatInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+            sendChatMessage();
+        }
+    });
+}
+
+socket.on("chatMessage", function (data) {
+    addChatMessage(data.sender, data.message);
+});
 
 /* ============================================================
    INIT

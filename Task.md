@@ -27,11 +27,11 @@ Hey! If you want to make this chess app way more fun and professional, here is a
 ---
 
 ## 🌐 3. Better Multiplayer (Medium to Hard)
-- [ ] **Create Private Rooms (Lobby System)**
+- [x] **Create Private Rooms (Lobby System)**
   - Right now, there is only one global game, which means everyone joins the same board! Let's make it so players can create a "Room" with a unique link and share it with a friend.
-- [ ] **Enter Custom Names**
+- [x] **Enter Custom Names**
   - Ask players for their name when they join, instead of just showing "White" and "Black".
-- [ ] **In-Game Chat**
+- [x] **In-Game Chat**
   - Add a small text box on the side so players (and people watching the game) can chat with each other.
 
 ---

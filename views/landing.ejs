@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chess — Create Room</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --neon-purple: #a855f7;
+        --neon-blue:   #3b82f6;
+        --neon-cyan:   #06b6d4;
+        --bg-void:    #030308;
+        --bg-surface: #0d0d1a;
+        --bg-card:    rgba(13, 13, 26, 0.75);
+        --border-neon:   rgba(168, 85, 247, 0.4);
+        --text-primary:   #f1f0ff;
+        --text-secondary: #a8a0c8;
+        --font-hud:  'Orbitron', 'Rajdhani', monospace;
+        --font-body: 'Inter', sans-serif;
+      }
+
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      html { scroll-behavior: smooth; }
+
+      body {
+        background-color: var(--bg-void);
+        background-image: url('https://images.unsplash.com/photo-1529699211952-734e80c4d42b?q=80&w=2070&auto=format&fit=crop');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+        font-family: var(--font-body);
+        color: var(--text-primary);
+        min-height: 100vh;
+        overflow-x: hidden;
+        position: relative;
+      }
+
+      body::before {
+        content: '';
+        position: fixed; inset: 0;
+        background: rgba(3, 3, 8, 0.85);
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      #app-wrapper {
+        position: relative;
+        z-index: 1;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px 16px;
+      }
+
+      .landing-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border-neon);
+        border-radius: 20px;
+        backdrop-filter: blur(24px);
+        box-shadow: 0 0 40px rgba(168, 85, 247, 0.35), 0 40px 80px rgba(0,0,0,0.6);
+        padding: 40px;
+        max-width: 500px;
+        width: 100%;
+        text-align: center;
+      }
+
+      .landing-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, var(--neon-purple), var(--neon-blue), var(--neon-cyan), transparent);
+        background-size: 300% auto;
+        animation: accentShift 5s linear infinite;
+      }
+
+      @keyframes accentShift {
+        0%   { background-position: 0% center; }
+        100% { background-position: 300% center; }
+      }
+
+      .logo {
+        font-size: 64px;
+        margin-bottom: 20px;
+        filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.5));
+      }
+
+      h1 {
+        font-family: var(--font-hud);
+        font-size: 32px;
+        font-weight: 800;
+        letter-spacing: 3px;
+        background: linear-gradient(90deg, var(--neon-purple), var(--neon-cyan));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 12px;
+      }
+
+      p {
+        color: var(--text-secondary);
+        margin-bottom: 32px;
+        font-size: 16px;
+      }
+
+      .btn-group {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .cyber-btn {
+        padding: 16px 24px;
+        border: 1px solid;
+        border-radius: 12px;
+        font-family: var(--font-hud);
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.22s ease;
+        backdrop-filter: blur(10px);
+        position: relative;
+        overflow: hidden;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .btn-create {
+        background: linear-gradient(135deg, rgba(168,85,247,0.22), rgba(59,130,246,0.22));
+        border-color: var(--neon-purple);
+        color: var(--neon-purple);
+        box-shadow: 0 0 12px rgba(168,85,247,0.18);
+      }
+
+      .btn-create:hover {
+        background: linear-gradient(135deg, rgba(168,85,247,0.45), rgba(59,130,246,0.45));
+        box-shadow: 0 0 28px rgba(168,85,247,0.45);
+        color: #fff;
+        transform: translateY(-2px);
+      }
+
+      .btn-join {
+        background: rgba(255,255,255,0.05);
+        border-color: rgba(255,255,255,0.15);
+        color: var(--text-secondary);
+      }
+
+      .btn-join:hover {
+        background: rgba(255,255,255,0.1);
+        border-color: rgba(255,255,255,0.3);
+        color: var(--text-primary);
+        transform: translateY(-2px);
+      }
+
+      .input-group {
+        display: flex;
+        gap: 10px;
+        margin-top: 16px;
+      }
+
+      .room-input {
+        flex: 1;
+        padding: 14px 18px;
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 12px;
+        background: rgba(0,0,0,0.3);
+        color: var(--text-primary);
+        font-family: var(--font-hud);
+        font-size: 14px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        outline: none;
+        transition: all 0.22s ease;
+      }
+
+      .room-input:focus {
+        border-color: var(--neon-purple);
+        box-shadow: 0 0 12px rgba(168,85,247,0.2);
+      }
+
+      .room-input::placeholder {
+        color: var(--text-muted);
+        text-transform: none;
+        letter-spacing: 1px;
+      }
+
+      .hidden { display: none !important; }
+
+      @media (max-width: 520px) {
+        .landing-card { padding: 30px 20px; }
+        h1 { font-size: 24px; }
+        .logo { font-size: 48px; }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="app-wrapper">
+      <div class="landing-card">
+        <div class="logo">♟️</div>
+        <h1>CHESS ONLINE</h1>
+        <p>Create a private room or join an existing one to play with a friend</p>
+        
+        <div class="btn-group">
+          <input type="text" class="room-input" id="playerNameInput" placeholder="Enter your name" maxlength="15" style="margin-bottom: 12px;">
+          <button class="cyber-btn btn-create" id="createRoomBtn">
+            <span>✨</span> Create New Room
+          </button>
+          
+          <div>
+            <button class="cyber-btn btn-join" id="toggleJoinBtn">
+              <span>🔗</span> Join Existing Room
+          </button>
+            
+            <div class="input-group hidden" id="joinInputGroup">
+              <input type="text" class="room-input" id="roomCodeInput" placeholder="Enter room code (e.g., ABC123)" maxlength="6">
+              <button class="cyber-btn btn-join" id="joinRoomBtn" style="flex: 0 0 auto;">Join</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const createRoomBtn = document.getElementById('createRoomBtn');
+      const toggleJoinBtn = document.getElementById('toggleJoinBtn');
+      const joinInputGroup = document.getElementById('joinInputGroup');
+      const joinRoomBtn = document.getElementById('joinRoomBtn');
+      const roomCodeInput = document.getElementById('roomCodeInput');
+
+      createRoomBtn.addEventListener('click', async () => {
+        const playerName = playerNameInput.value.trim() || 'Anonymous';
+        try {
+          const response = await fetch('/api/create-room');
+          const data = await response.json();
+          if (data.roomId) {
+            window.location.href = `/room/${data.roomId}?name=${encodeURIComponent(playerName)}`;
+          }
+        } catch (error) {
+          console.error('Error creating room:', error);
+          alert('Failed to create room. Please try again.');
+        }
+      });
+
+      toggleJoinBtn.addEventListener('click', () => {
+        joinInputGroup.classList.toggle('hidden');
+        if (!joinInputGroup.classList.contains('hidden')) {
+          roomCodeInput.focus();
+        }
+      });
+
+      joinRoomBtn.addEventListener('click', () => {
+        const roomCode = roomCodeInput.value.trim().toUpperCase();
+        const playerName = playerNameInput.value.trim() || 'Anonymous';
+        if (roomCode.length === 6) {
+          window.location.href = `/room/${roomCode}?name=${encodeURIComponent(playerName)}`;
+        } else {
+          alert('Please enter a valid 6-character room code.');
+        }
+      });
+
+      roomCodeInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          joinRoomBtn.click();
+        }
+      });
+
+      roomCodeInput.addEventListener('input', (e) => {
+        e.target.value = e.target.value.toUpperCase();
+      });
+    </script>
+  </body>
+</html>
