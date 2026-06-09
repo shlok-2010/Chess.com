@@ -110,6 +110,7 @@
         z-index: 1;
         min-height: 100vh;
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
         padding: 20px 16px;
@@ -314,8 +315,8 @@
         display: grid;
         grid-template-columns: repeat(8, minmax(0, 1fr));
         grid-template-rows:    repeat(8, minmax(0, 1fr));
-        width: 440px;
-        height: 440px;
+        width: min(440px, 90vw);
+        height: min(440px, 90vw);
       }
 
       /* SQUARES — Classic Chess.com colours */
@@ -339,8 +340,8 @@
       .piece {
         width: 100%;
         height: 100%;
-        max-width: 42px;
-        max-height: 42px;
+        max-width: min(42px, 11.25vw);
+        max-height: min(42px, 11.25vw);
         object-fit: contain;
         cursor: pointer;
         transition: transform 0.12s ease, filter 0.12s ease;
@@ -970,29 +971,52 @@
       /* ============================================================
          RESPONSIVE
       ============================================================ */
-      @media (max-width: 800px) {
-        .game-card { flex-direction: column; align-items: center; padding: 14px; }
-        .move-history-panel { width: 100%; min-height: 180px; }
-        .chat-panel { width: 100%; min-height: 250px; }
-        .chessboard { width: 360px; height: 360px; }
+
+      /* ---- Tablet / small desktop: stack panels below board ---- */
+      @media (max-width: 900px) {
+        #app-wrapper { padding: 12px 10px; align-items: flex-start; }
+        .game-card {
+          flex-direction: column;
+          align-items: center;
+          padding: 16px;
+          width: 100%;
+          max-width: 520px;
+          margin: 0 auto;
+        }
+        .board-column { width: 100%; align-items: center; }
+        .player-strip  { width: 100%; max-width: min(440px, 90vw); }
+        .move-history-panel {
+          width: 100%;
+          max-width: min(440px, 90vw);
+          min-height: 160px;
+          align-self: auto;
+        }
+        .chat-panel {
+          width: 100%;
+          max-width: min(440px, 90vw);
+          min-height: 220px;
+        }
       }
 
-      @media (min-width: 801px) {
+      @media (min-width: 901px) {
         .game-card { flex-direction: row; }
       }
 
+      /* ---- Mobile ---- */
       @media (max-width: 520px) {
-        #app-wrapper { padding: 10px 8px; }
+        #app-wrapper { padding: 8px 6px; }
         .game-card { padding: 10px; gap: 10px; }
-        .chessboard { width: 300px; height: 300px; }
-        .piece { max-width: 32px; max-height: 32px; }
-        .timer-pill { font-size: 18px; min-width: 58px; padding: 5px 10px; }
+        .timer-pill { font-size: 17px; min-width: 52px; padding: 4px 9px; }
         .cyber-btn { font-size: 8.5px; padding: 8px 6px; }
+        .strip-name { font-size: 11px; }
+        .strip-avatar { width: 30px; height: 30px; font-size: 15px; }
+        .room-info-bar { flex-wrap: wrap; gap: 8px; padding: 10px 14px; }
+        .room-code { font-size: 15px; letter-spacing: 2px; }
       }
 
       @media (max-width: 380px) {
-        .chessboard { width: 270px; height: 270px; }
-        .piece { max-width: 28px; max-height: 28px; }
+        #app-wrapper { padding: 6px 4px; }
+        .timer-pill { font-size: 15px; min-width: 46px; padding: 3px 7px; }
       }
 
       /* Room Info Bar */

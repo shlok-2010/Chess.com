@@ -37,11 +37,11 @@ Hey! If you want to make this chess app way more fun and professional, here is a
 ---
 
 ## ⏱️ 4. Extra Features to Show Off (Pro Level)
-- [ ] **Add Game Clocks (Timers)**
+- [x] **Add Game Clocks (Timers)**
   - Give each player a 5 or 10-minute timer that counts down on their turn. If a player's timer hits zero, they lose!
-- [ ] **Move History List**
+- [x] **Move History List**
   - Show a list of all the moves played so far (like `1. e4 e5`) in a sidebar.
-- [ ] **Play Against the Computer**
+- [x] **Play Against the Computer**
   - If a player is alone, let them play against a simple AI or a chess computer (like Stockfish).
   add the chess image in backround pe chess image type lagana hai 
 
