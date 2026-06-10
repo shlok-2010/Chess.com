@@ -13,7 +13,7 @@
  const rooms = {};
 
  // Timer settings
- const INITIAL_TIME = 30; // 30 seconds per player
+ const INITIAL_TIME = 600; // 10 minutes per player (600 seconds)
 
  function generateRoomId() {
      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -67,7 +67,7 @@
                   clearInterval(room.timerInterval);
                   room.timerInterval = null;
                   room.closed = true;
-                  io.to(roomId).emit("gameOver", { winner: 'b', reason: 'timeout' });
+                  io.to(roomId).emit("gameOver", { winner: 'black', reason: 'lost on time' });
                   return;
               }
           } else {
@@ -78,7 +78,7 @@
                   clearInterval(room.timerInterval);
                   room.timerInterval = null;
                   room.closed = true;
-                  io.to(roomId).emit("gameOver", { winner: 'w', reason: 'timeout' });
+                  io.to(roomId).emit("gameOver", { winner: 'white', reason: 'lost on time' });
                   return;
               }
           }
@@ -233,14 +233,16 @@ io.on("connection", function(uniquesocket){
                     let reason = "draw";
                     let winner = null;
                     if (room.chess.isCheckmate()) {
-                        reason = "checkmate";
-                        winner = room.chess.turn() === "w" ? "b" : "w";
+                        reason = "by checkmate";
+                        winner = room.chess.turn() === "w" ? "black" : "white";
                     } else if (room.chess.isStalemate()) {
-                        reason = "stalemate";
+                        reason = "by stalemate";
                     } else if (room.chess.isThreefoldRepetition()) {
-                        reason = "threefold repetition";
+                        reason = "by threefold repetition";
                     } else if (room.chess.isInsufficientMaterial()) {
-                        reason = "insufficient material";
+                        reason = "by insufficient material";
+                    } else if (room.chess.isDraw()) {
+                        reason = "by 50-move rule";
                     }
                     
                     if (room.timerInterval) {
@@ -252,13 +254,8 @@ io.on("connection", function(uniquesocket){
                     
                     io.to(currentRoomId).emit("gameOver", { winner, reason });
                 } else {
-                    // Per-move time control: reset the clock after every completed move
-                    // so each player gets a fresh INITIAL_TIME for their turn.
-                    room.whiteTime = INITIAL_TIME;
-                    room.blackTime = INITIAL_TIME;
-                    io.to(currentRoomId).emit("timerUpdate", { whiteTime: room.whiteTime, blackTime: room.blackTime });
-                    
-                    // Restart the countdown for the new active player
+                    // Continue timer for next player - do NOT reset
+                    // Timer keeps counting down from current values
                     if (room.players.white && room.players.black && room.gameActive) {
                         startTimer(currentRoomId);
                     }
@@ -288,7 +285,8 @@ io.on("connection", function(uniquesocket){
             room.gameActive = false;
             room.closed = true;
             
-            io.to(currentRoomId).emit("resigned", { resigner });
+            const winner = resigner === 'w' ? 'black' : 'white';
+            io.to(currentRoomId).emit("gameOver", { winner, reason: 'resigned' });
         }
     });
 
@@ -307,31 +305,20 @@ io.on("connection", function(uniquesocket){
         }
     });
 
-    uniquesocket.on("drawResponse", (data) => {
+    uniquesocket.on("acceptDraw", () => {
         if (!currentRoomId || !rooms[currentRoomId]) return;
         const room = rooms[currentRoomId];
         
         if (!room.gameActive) return;
-        if (data.accepted) {
-            if (room.timerInterval) {
-                clearInterval(room.timerInterval);
-                room.timerInterval = null;
-            }
-            room.gameActive = false;
-            room.closed = true;
-            
-            io.to(currentRoomId).emit("drawDeclared", { reason: 'agreement' });
-        } else {
-            let offererId = null;
-            if (uniquesocket.id === room.players.white) {
-                offererId = room.players.black;
-            } else if (uniquesocket.id === room.players.black) {
-                offererId = room.players.white;
-            }
-            if (offererId) {
-                io.to(offererId).emit("drawDeclined");
-            }
+        
+        if (room.timerInterval) {
+            clearInterval(room.timerInterval);
+            room.timerInterval = null;
         }
+        room.gameActive = false;
+        room.closed = true;
+        
+        io.to(currentRoomId).emit("gameOver", { winner: null, reason: 'by mutual agreement' });
     });
 
     uniquesocket.on("chatMessage", (data) => {

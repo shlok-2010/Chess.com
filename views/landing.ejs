@@ -1,349 +1,382 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Chess — Create Room</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-      :root {
-        --neon-purple: #a855f7;
-        --neon-blue:   #3b82f6;
-        --neon-cyan:   #06b6d4;
-        --bg-void:    #030308;
-        --bg-surface: #0d0d1a;
-        --bg-card:    rgba(13, 13, 26, 0.75);
-        --border-neon:   rgba(168, 85, 247, 0.4);
-        --text-primary:   #f1f0ff;
-        --text-secondary: #a8a0c8;
-        --font-hud:  'Orbitron', 'Rajdhani', monospace;
-        --font-body: 'Inter', sans-serif;
-      }
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chess.com Clone — Play Chess Online</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #312e2b;
+      --bg-secondary: #272522;
+      --bg-tertiary: #3d3a37;
+      --bg-card: #262421;
+      --border-color: rgba(255,255,255,0.08);
+      --border-light: rgba(255,255,255,0.12);
+      --text-primary: #ffffff;
+      --text-secondary: #b0b0b0;
+      --text-muted: #8c8c8c;
+      --accent-green: #81b64c;
+      --accent-green-hover: #9bc35c;
+      --accent-blue: #5d8aa8;
+      --accent-red: #c44536;
+      --accent-amber: #e3a02a;
+      --font-heading: 'Montserrat', sans-serif;
+      --font-body: 'Inter', sans-serif;
+    }
 
-      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-      html { scroll-behavior: smooth; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
 
-      body {
-        background-color: var(--bg-void);
-        background-image: url('https://images.unsplash.com/photo-1529699211952-734e80c4d42b?q=80&w=2070&auto=format&fit=crop');
-        background-size: cover;
-        background-position: center;
-        background-attachment: fixed;
-        font-family: var(--font-body);
-        color: var(--text-primary);
-        min-height: 100vh;
-        overflow-x: hidden;
-        position: relative;
-      }
+    body {
+      background-color: var(--bg-primary);
+      font-family: var(--font-body);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow-x: hidden;
+    }
 
-      body::before {
-        content: '';
-        position: fixed; inset: 0;
-        background: rgba(3, 3, 8, 0.85);
-        pointer-events: none;
-        z-index: 0;
-      }
+    /* Subtle background pattern */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        radial-gradient(ellipse 50% 40% at 20% 20%, rgba(129,182,76,0.04) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 40% at 80% 80%, rgba(93,138,168,0.03) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
 
-      #app-wrapper {
-        position: relative;
-        z-index: 1;
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 20px 16px;
-      }
+    .landing-wrapper {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 480px;
+      padding: 24px;
+    }
 
-      .landing-card {
-        background: var(--bg-card);
-        border: 1px solid var(--border-neon);
-        border-radius: 20px;
-        backdrop-filter: blur(24px);
-        box-shadow: 0 0 40px rgba(168, 85, 247, 0.35), 0 40px 80px rgba(0,0,0,0.6);
-        padding: 40px;
-        max-width: 500px;
-        width: 100%;
-        text-align: center;
-      }
+    /* Top logo area */
+    .landing-header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
 
-      .landing-card::before {
-        content: '';
-        position: absolute;
-        top: 0; left: 0; right: 0;
-        height: 2px;
-        background: linear-gradient(90deg, transparent, var(--neon-purple), var(--neon-blue), var(--neon-cyan), transparent);
-        background-size: 300% auto;
-        animation: accentShift 5s linear infinite;
-      }
+    .landing-logo {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 16px;
+      background: var(--accent-green);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      box-shadow: 0 4px 20px rgba(129,182,76,0.3);
+    }
 
-      @keyframes accentShift {
-        0%   { background-position: 0% center; }
-        100% { background-position: 300% center; }
-      }
+    .landing-header h1 {
+      font-family: var(--font-heading);
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--text-primary);
+      margin-bottom: 6px;
+      letter-spacing: -0.5px;
+    }
 
-      .logo {
-        font-size: 64px;
-        margin-bottom: 20px;
-        filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.5));
-      }
+    .landing-header p {
+      color: var(--text-muted);
+      font-size: 15px;
+      line-height: 1.5;
+    }
 
-      h1 {
-        font-family: var(--font-hud);
-        font-size: 32px;
-        font-weight: 800;
-        letter-spacing: 3px;
-        background: linear-gradient(90deg, var(--neon-purple), var(--neon-cyan));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        margin-bottom: 12px;
-      }
+    /* Card */
+    .landing-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
 
-      p {
-        color: var(--text-secondary);
-        margin-bottom: 32px;
-        font-size: 16px;
-      }
+    /* Name input */
+    .input-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
 
-      .btn-group {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
+    .room-input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 15px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      margin-bottom: 20px;
+    }
 
-      .cyber-btn {
-        padding: 16px 24px;
-        border: 1px solid;
-        border-radius: 12px;
-        font-family: var(--font-hud);
-        font-size: 14px;
-        font-weight: 700;
-        letter-spacing: 2px;
-        text-transform: uppercase;
-        cursor: pointer;
-        transition: all 0.22s ease;
-        backdrop-filter: blur(10px);
-        position: relative;
-        overflow: hidden;
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-      }
+    .room-input:focus {
+      border-color: var(--accent-green);
+      box-shadow: 0 0 0 3px rgba(129,182,76,0.15);
+    }
 
-      .btn-create {
-        background: linear-gradient(135deg, rgba(168,85,247,0.22), rgba(59,130,246,0.22));
-        border-color: var(--neon-purple);
-        color: var(--neon-purple);
-        box-shadow: 0 0 12px rgba(168,85,247,0.18);
-      }
+    .room-input::placeholder { color: var(--text-muted); }
 
-      .btn-create:hover {
-        background: linear-gradient(135deg, rgba(168,85,247,0.45), rgba(59,130,246,0.45));
-        box-shadow: 0 0 28px rgba(168,85,247,0.45);
-        color: #fff;
-        transform: translateY(-2px);
-      }
+    .input-error {
+      border-color: var(--accent-red) !important;
+      box-shadow: 0 0 0 3px rgba(196,69,54,0.15) !important;
+      animation: shake 0.3s ease;
+    }
 
-      .btn-join {
-        background: rgba(255,255,255,0.05);
-        border-color: rgba(255,255,255,0.15);
-        color: var(--text-secondary);
-      }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      75% { transform: translateX(5px); }
+    }
 
-      .btn-join:hover {
-        background: rgba(255,255,255,0.1);
-        border-color: rgba(255,255,255,0.3);
-        color: var(--text-primary);
-        transform: translateY(-2px);
-      }
+    .name-required-hint {
+      font-size: 12px;
+      color: var(--accent-red);
+      margin-top: -16px;
+      margin-bottom: 12px;
+      display: none;
+    }
 
-      .input-group {
-        display: flex;
-        gap: 10px;
-        margin-top: 16px;
-      }
+    /* Divider */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 20px 0;
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border-color);
+    }
 
-      .room-input {
-        flex: 1;
-        padding: 14px 18px;
-        border: 1px solid rgba(255,255,255,0.15);
-        border-radius: 12px;
-        background: rgba(0,0,0,0.3);
-        color: var(--text-primary);
-        font-family: var(--font-hud);
-        font-size: 14px;
-        letter-spacing: 2px;
-        text-transform: uppercase;
-        outline: none;
-        transition: all 0.22s ease;
-      }
+    /* Buttons */
+    .btn {
+      width: 100%;
+      padding: 14px 20px;
+      border-radius: 10px;
+      font-family: var(--font-heading);
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.18s ease;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-transform: none;
+    }
 
-      .room-input:focus {
-        border-color: var(--neon-purple);
-        box-shadow: 0 0 12px rgba(168,85,247,0.2);
-      }
+    .btn-primary {
+      background: var(--accent-green);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(129,182,76,0.3);
+    }
+    .btn-primary:hover {
+      background: var(--accent-green-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(129,182,76,0.4);
+    }
+    .btn-primary:active { transform: translateY(0); }
 
-      .room-input::placeholder {
-        color: var(--text-muted);
-        text-transform: none;
-        letter-spacing: 1px;
-      }
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      border: 1px solid var(--border-color);
+    }
+    .btn-secondary:hover {
+      background: #454240;
+      color: var(--text-primary);
+      border-color: var(--border-light);
+    }
 
-      .hidden { display: none !important; }
+    .btn-join-inline {
+      padding: 14px 20px;
+      white-space: nowrap;
+      background: var(--accent-blue);
+      color: #fff;
+      font-size: 14px;
+    }
+    .btn-join-inline:hover {
+      background: #6d9ab8;
+      transform: translateY(-1px);
+    }
 
-      .input-error {
-        border-color: #ef4444 !important;
-        box-shadow: 0 0 12px rgba(239,68,68,0.35) !important;
-        animation: shake 0.35s ease;
-      }
+    /* Join group */
+    .join-group {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .join-group .room-input {
+      margin-bottom: 0;
+      flex: 1;
+      min-width: 0;
+      height: 52px;
+      font-size: 18px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-align: center;
+      font-family: var(--font-heading);
+    }
 
-      .name-required-hint {
-        font-family: var(--font-hud);
-        font-size: 10px;
-        letter-spacing: 1px;
-        color: #f87171;
-        text-align: left;
-        margin-top: -8px;
-        margin-bottom: 4px;
-        display: none;
-      }
+    .hidden { display: none !important; }
 
-      @keyframes shake {
-        0%,100% { transform: translateX(0); }
-        25%      { transform: translateX(-6px); }
-        75%      { transform: translateX(6px); }
-      }
+    /* Footer */
+    .landing-footer {
+      text-align: center;
+      margin-top: 24px;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
 
-      @media (max-width: 520px) {
-        .landing-card { padding: 28px 18px; }
-        h1 { font-size: 22px; letter-spacing: 2px; }
-        .logo { font-size: 48px; }
-        p { font-size: 14px; }
-        .cyber-btn { font-size: 12px; padding: 14px 18px; }
-        .room-input { font-size: 13px; padding: 12px 14px; }
-      }
+    /* Responsive */
+    @media (max-width: 520px) {
+      .landing-wrapper { padding: 16px; }
+      .landing-card { padding: 24px; }
+      .landing-header h1 { font-size: 24px; }
+      .landing-logo { width: 56px; height: 56px; font-size: 28px; }
+      .btn { padding: 12px 16px; font-size: 14px; }
+      .join-group { flex-direction: column; }
+      .join-group .btn-join-inline { width: 100%; }
+      .join-group .room-input { font-size: 17px; }
+    }
+  </style>
+</head>
 
-      @media (max-width: 380px) {
-        .landing-card { padding: 22px 14px; }
-        h1 { font-size: 18px; }
-        .logo { font-size: 40px; }
-      }
-    </style>
-  </head>
+<body>
+  <div class="landing-wrapper">
+    <div class="landing-header">
+      <div class="landing-logo">♟️</div>
+      <h1>Play Chess Online</h1>
+      <p>Create a private room and challenge a friend</p>
+    </div>
 
-  <body>
-    <div id="app-wrapper">
-      <div class="landing-card">
-        <div class="logo">♟️</div>
-        <h1>CHESS ONLINE</h1>
-        <p>Create a private room or join an existing one to play with a friend</p>
-        
-        <div class="btn-group">
-          <input type="text" class="room-input" id="playerNameInput" placeholder="Enter your name *" maxlength="15">
-          <div class="name-required-hint" id="nameHint">⚠ NAME IS REQUIRED</div>
-          <button class="cyber-btn btn-create" id="createRoomBtn">
-            <span>✨</span> Create New Room
-          </button>
-          
-          <div>
-            <button class="cyber-btn btn-join" id="toggleJoinBtn">
-              <span>🔗</span> Join Existing Room
-          </button>
-            
-            <div class="input-group hidden" id="joinInputGroup">
-              <input type="text" class="room-input" id="roomCodeInput" placeholder="Enter room code (e.g., ABC123)" maxlength="6">
-              <button class="cyber-btn btn-join" id="joinRoomBtn" style="flex: 0 0 auto;">Join</button>
-            </div>
-          </div>
-        </div>
+    <div class="landing-card">
+      <label class="input-label">Your Name</label>
+      <input type="text" class="room-input" id="playerNameInput" placeholder="Enter your name" maxlength="15" required>
+      <div class="name-required-hint" id="nameHint">Please enter your name</div>
+
+      <button class="btn btn-primary" id="createRoomBtn">
+        <span>🎮</span> Create New Game
+      </button>
+
+      <div class="divider">or</div>
+
+      <button class="btn btn-secondary" id="toggleJoinBtn">
+        <span>🔗</span> Join Existing Room
+      </button>
+
+      <div class="join-group hidden" id="joinInputGroup">
+        <input type="text" class="room-input" id="roomCodeInput" placeholder="ABC123" maxlength="6" autocomplete="off" spellcheck="false">
+        <button class="btn btn-join-inline" id="joinRoomBtn">Join</button>
       </div>
     </div>
 
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-      const createRoomBtn = document.getElementById('createRoomBtn');
-      const toggleJoinBtn = document.getElementById('toggleJoinBtn');
-      const joinInputGroup = document.getElementById('joinInputGroup');
-      const joinRoomBtn = document.getElementById('joinRoomBtn');
-      const roomCodeInput = document.getElementById('roomCodeInput');
-      const playerNameInput = document.getElementById('playerNameInput');
-      const nameHint = document.getElementById('nameHint');
+    <div class="landing-footer">
+      Play chess with friends in real-time
+    </div>
+  </div>
 
-      function validateName() {
-        const name = playerNameInput.value.trim();
-        if (!name) {
-          playerNameInput.classList.add('input-error');
-          nameHint.style.display = 'block';
-          playerNameInput.focus();
-          // Remove shake class after animation so it can re-trigger
-          playerNameInput.addEventListener('animationend', () => {
-            playerNameInput.classList.remove('input-error');
-            playerNameInput.classList.add('input-error');
-          }, { once: true });
-          return false;
-        }
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const createRoomBtn = document.getElementById('createRoomBtn');
+    const toggleJoinBtn = document.getElementById('toggleJoinBtn');
+    const joinInputGroup = document.getElementById('joinInputGroup');
+    const joinRoomBtn = document.getElementById('joinRoomBtn');
+    const roomCodeInput = document.getElementById('roomCodeInput');
+    const playerNameInput = document.getElementById('playerNameInput');
+    const nameHint = document.getElementById('nameHint');
+
+    function validateName() {
+      const name = playerNameInput.value.trim();
+      if (!name) {
+        playerNameInput.classList.add('input-error');
+        nameHint.style.display = 'block';
+        playerNameInput.focus();
+        setTimeout(() => playerNameInput.classList.remove('input-error'), 400);
+        return false;
+      }
+      playerNameInput.classList.remove('input-error');
+      nameHint.style.display = 'none';
+      return true;
+    }
+
+    playerNameInput.addEventListener('input', () => {
+      if (playerNameInput.value.trim()) {
         playerNameInput.classList.remove('input-error');
         nameHint.style.display = 'none';
-        return true;
       }
+    });
 
-      playerNameInput.addEventListener('input', () => {
-        if (playerNameInput.value.trim()) {
-          playerNameInput.classList.remove('input-error');
-          nameHint.style.display = 'none';
+    createRoomBtn.addEventListener('click', async () => {
+      if (!validateName()) return;
+      const playerName = playerNameInput.value.trim();
+      try {
+        const response = await fetch('/api/create-room');
+        const data = await response.json();
+        if (data.roomId) {
+          window.location.href = `/room/${data.roomId}?name=${encodeURIComponent(playerName)}`;
         }
-      });
+      } catch (error) {
+        console.error('Error creating room:', error);
+        alert('Failed to create room. Please try again.');
+      }
+    });
 
-      createRoomBtn.addEventListener('click', async () => {
-        if (!validateName()) return;
-        const playerName = playerNameInput.value.trim();
-        try {
-          const response = await fetch('/api/create-room');
-          const data = await response.json();
-          if (data.roomId) {
-            window.location.href = `/room/${data.roomId}?name=${encodeURIComponent(playerName)}`;
-          }
-        } catch (error) {
-          console.error('Error creating room:', error);
-          alert('Failed to create room. Please try again.');
-        }
-      });
+    toggleJoinBtn.addEventListener('click', () => {
+      joinInputGroup.classList.toggle('hidden');
+      toggleJoinBtn.classList.toggle('hidden');
+      if (!joinInputGroup.classList.contains('hidden')) {
+        roomCodeInput.focus();
+      }
+    });
 
-      toggleJoinBtn.addEventListener('click', () => {
-        joinInputGroup.classList.toggle('hidden');
-        if (!joinInputGroup.classList.contains('hidden')) {
-          if (playerNameInput.value.trim()) {
-            roomCodeInput.focus();
-          } else {
-            playerNameInput.focus();
-          }
-        }
-      });
+    joinRoomBtn.addEventListener('click', () => {
+      if (!validateName()) return;
+      const roomCode = roomCodeInput.value.trim().toUpperCase();
+      const playerName = playerNameInput.value.trim();
+      if (roomCode.length === 6) {
+        window.location.href = `/room/${roomCode}?name=${encodeURIComponent(playerName)}`;
+      } else {
+        alert('Please enter a valid 6-character room code.');
+      }
+    });
 
-      joinRoomBtn.addEventListener('click', () => {
-        if (!validateName()) return;
-        const roomCode = roomCodeInput.value.trim().toUpperCase();
-        const playerName = playerNameInput.value.trim();
-        if (roomCode.length === 6) {
-          window.location.href = `/room/${roomCode}?name=${encodeURIComponent(playerName)}`;
-        } else {
-          alert('Please enter a valid 6-character room code.');
-        }
-      });
+    roomCodeInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') joinRoomBtn.click();
+    });
 
-      roomCodeInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          joinRoomBtn.click();
-        }
-      });
-
-      roomCodeInput.addEventListener('input', (e) => {
-        e.target.value = e.target.value.toUpperCase();
-      });
-    </script>
-  </body>
+    roomCodeInput.addEventListener('input', (e) => {
+      e.target.value = e.target.value.toUpperCase();
+    });
+  </script>
+</body>
 </html>
