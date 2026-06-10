@@ -550,21 +550,9 @@ function closePopup() {
     document.getElementById("gamePopup").classList.add("hidden");
 }
 
-// Create a brand-new room and redirect both this player there.
-// The current room is closed once a game ends, so a new room is required to play again.
-async function createNewRoom() {
-    try {
-        const response = await fetch('/api/create-room');
-        const data = await response.json();
-        if (data.roomId) {
-            window.location.href = `/room/${data.roomId}`;
-        } else {
-            showNotif('❌ Failed to create a new room');
-        }
-    } catch (err) {
-        console.error('Error creating room:', err);
-        showNotif('❌ Failed to create a new room');
-    }
+// Redirect to home page (landing page) to create/join a new room
+function createNewRoom() {
+    window.location.href = '/';
 }
 
 function goHome() {

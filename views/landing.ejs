@@ -195,6 +195,29 @@
 
       .hidden { display: none !important; }
 
+      .input-error {
+        border-color: #ef4444 !important;
+        box-shadow: 0 0 12px rgba(239,68,68,0.35) !important;
+        animation: shake 0.35s ease;
+      }
+
+      .name-required-hint {
+        font-family: var(--font-hud);
+        font-size: 10px;
+        letter-spacing: 1px;
+        color: #f87171;
+        text-align: left;
+        margin-top: -8px;
+        margin-bottom: 4px;
+        display: none;
+      }
+
+      @keyframes shake {
+        0%,100% { transform: translateX(0); }
+        25%      { transform: translateX(-6px); }
+        75%      { transform: translateX(6px); }
+      }
+
       @media (max-width: 520px) {
         .landing-card { padding: 28px 18px; }
         h1 { font-size: 22px; letter-spacing: 2px; }
@@ -220,7 +243,8 @@
         <p>Create a private room or join an existing one to play with a friend</p>
         
         <div class="btn-group">
-          <input type="text" class="room-input" id="playerNameInput" placeholder="Enter your name" maxlength="15" style="margin-bottom: 12px;">
+          <input type="text" class="room-input" id="playerNameInput" placeholder="Enter your name *" maxlength="15">
+          <div class="name-required-hint" id="nameHint">⚠ NAME IS REQUIRED</div>
           <button class="cyber-btn btn-create" id="createRoomBtn">
             <span>✨</span> Create New Room
           </button>
@@ -246,9 +270,37 @@
       const joinInputGroup = document.getElementById('joinInputGroup');
       const joinRoomBtn = document.getElementById('joinRoomBtn');
       const roomCodeInput = document.getElementById('roomCodeInput');
+      const playerNameInput = document.getElementById('playerNameInput');
+      const nameHint = document.getElementById('nameHint');
+
+      function validateName() {
+        const name = playerNameInput.value.trim();
+        if (!name) {
+          playerNameInput.classList.add('input-error');
+          nameHint.style.display = 'block';
+          playerNameInput.focus();
+          // Remove shake class after animation so it can re-trigger
+          playerNameInput.addEventListener('animationend', () => {
+            playerNameInput.classList.remove('input-error');
+            playerNameInput.classList.add('input-error');
+          }, { once: true });
+          return false;
+        }
+        playerNameInput.classList.remove('input-error');
+        nameHint.style.display = 'none';
+        return true;
+      }
+
+      playerNameInput.addEventListener('input', () => {
+        if (playerNameInput.value.trim()) {
+          playerNameInput.classList.remove('input-error');
+          nameHint.style.display = 'none';
+        }
+      });
 
       createRoomBtn.addEventListener('click', async () => {
-        const playerName = playerNameInput.value.trim() || 'Anonymous';
+        if (!validateName()) return;
+        const playerName = playerNameInput.value.trim();
         try {
           const response = await fetch('/api/create-room');
           const data = await response.json();
@@ -264,13 +316,18 @@
       toggleJoinBtn.addEventListener('click', () => {
         joinInputGroup.classList.toggle('hidden');
         if (!joinInputGroup.classList.contains('hidden')) {
-          roomCodeInput.focus();
+          if (playerNameInput.value.trim()) {
+            roomCodeInput.focus();
+          } else {
+            playerNameInput.focus();
+          }
         }
       });
 
       joinRoomBtn.addEventListener('click', () => {
+        if (!validateName()) return;
         const roomCode = roomCodeInput.value.trim().toUpperCase();
-        const playerName = playerNameInput.value.trim() || 'Anonymous';
+        const playerName = playerNameInput.value.trim();
         if (roomCode.length === 6) {
           window.location.href = `/room/${roomCode}?name=${encodeURIComponent(playerName)}`;
         } else {
